@@ -1,0 +1,46 @@
+{
+  "name": "backloop.dev",
+  "version": "1.0.5",
+  "description": "Local HTTPS development with *.backloop.dev pointing to localhost and SSL certificates",
+  "keywords": [
+    "SSL",
+    "localhost",
+    "loopback",
+    "Express",
+    "Mixed Content",
+    "local development",
+    "HTTPS",
+    "Vue.js",
+    "Proxy",
+    "CORS",
+    "Same-origin policy"
+  ],
+  "homepage": "https://github.com/perki/backloop.dev",
+  "bugs": {
+    "url": "https://github.com/perki/backloop.dev/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:perki/backloop.dev.git"
+  },
+  "license": "BSD-3-Clause",
+  "author": "Perki (https://backloop.dev)",
+  "main": "src/index.js",
+  "bin": {
+    "backloop.dev": "bin/webserver.js",
+    "backloop.dev-proxy": "bin/proxy.js",
+    "backloop.dev-update": "bin/update.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/update.js",
+    "lint": "semistandard",
+    "proxy": "node src/webserver/proxy.js",
+    "start": "node src/webserver/main.js"
+  },
+  "dependencies": {
+    "express": "^4.18.1"
+  },
+  "devDependencies": {
+    "semistandard": "^16.0.1"
+  }
+}

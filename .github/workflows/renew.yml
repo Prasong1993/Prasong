@@ -1,0 +1,52 @@
+name: Renew SSL certificate and publish it to backloop.dev
+
+on:
+  schedule:
+    # each Two days at 10:30
+    - cron:  "30 10 */2 * *"
+  workflow_dispatch:
+
+env:
+  GANDI_API_TOKEN: ${{ secrets.GANDI_API_TOKEN }}
+  ACME_ACCOUNT_URL: ${{ secrets.ACME_ACCOUNT_URL }}
+  ACME_ACCOUNT_KEY: ${{ secrets.ACME_ACCOUNT_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout master branch
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Checkout gh-pages branch
+      uses: actions/checkout@v4
+      with:
+        path: renew/gh-pages
+        ref: gh-pages
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Fetch dependencies
+      working-directory: ./renew
+      run: npm ci
+
+    - name: Generate new certificate
+      working-directory: ./renew
+      # uses env: GANDI_API_TOKEN, ACME_ACCOUNT_URL, ACME_ACCOUNT_KEY
+      run: IS_PRODUCTION=true npm start
+
+    - name: Commit and push
+      uses: EndBug/add-and-commit@v9
+      with:
+        author_name: Perki
+        author_email: ${{ secrets.BACKLOOP_EMAIL }}
+        # Whether to use the --force option on `git add`, in order to bypass eventual gitignores
+        # force: false
+        message: 'update cert'
+        cwd: ./renew/gh-pages

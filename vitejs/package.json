@@ -1,0 +1,34 @@
+{
+  "name": "vite-plugin-backloop.dev",
+  "version": "1.0.11",
+  "description": "Use backloop.dev for ViteJS development with https on localhost ",
+  "keywords": [
+    "vite-plugin",
+    "https",
+    "localhost",
+    "ViteJs",
+    "local development",
+    "SSL"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:perki/backloop.dev.git"
+  },
+  "license": "BSD-3-Clause",
+  "author": "Perki (https://backloop.dev)",
+  "type": "module",
+  "types": "index.d.ts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "backloop.dev": "^3.0.2"
+  },
+  "devDependencies": {
+    "vite": "^6.4.1"
+  },
+  "peerDependencies": {
+    "vite": ">=4.0.0"
+  }
+}

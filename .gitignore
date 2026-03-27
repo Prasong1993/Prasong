@@ -1,0 +1,4 @@
+*/node_modules
+renew/secret*.env.sh
+renew/gh-pages
+.DS_Store

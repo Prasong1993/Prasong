@@ -1,0 +1,40 @@
+{
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "category": "Productivity",
+    "displayName": "IRIS",
+    "developerName": "\u0e1b\u0e23\u0e30\u0e2a\u0e07\u0e04\u0e4c \u0e2a\u0e35\u0e25\u0e1b\u0e23\u0e32\u0e13\u0e35",
+    "shortDescription": "IRIS controlled five-step workflow",
+    "longDescription": "IRIS executes five gated steps using evidence-first control. Every result is verified before progression and errors are retained for final reporting. Driven by an MCP server with real SQLite persistence.",
+    "defaultPrompt": [
+      "\u0e17\u0e33\u0e07\u0e32\u0e19\u0e01\u0e31\u0e1a IRIS: \u0e40\u0e23\u0e34\u0e48\u0e21 create_work \u0e41\u0e25\u0e49\u0e27\u0e17\u0e33 5 \u0e02\u0e31\u0e49\u0e19 \u0e17\u0e38\u0e01\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e2d\u0e07 verify expected vs actual \u0e01\u0e48\u0e2d\u0e19\u0e1c\u0e48\u0e32\u0e19",
+      "\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e07\u0e32\u0e19 IRIS \u0e14\u0e49\u0e27\u0e22 get_work_status \u0e14\u0e39 steps errors checkpoints audit verifications",
+      "\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01 evidence \u0e08\u0e23\u0e34\u0e07\u0e01\u0e48\u0e2d\u0e19\u0e2a\u0e48\u0e07\u0e21\u0e2d\u0e1a \u0e41\u0e25\u0e30\u0e15\u0e49\u0e2d\u0e07\u0e1c\u0e48\u0e32\u0e19 final_verify \u0e08\u0e36\u0e07\u0e08\u0e30 DELIVERED"
+    ],
+    "brandColor": "#0EA5E9"
+  },
+  "name": "iris-controller",
+  "version": "0.6.5",
+  "description": "IRIS five-step controlled workflow with evidence, error capture, checkpointing, recovery, audit, and verification.",
+  "author": {
+    "name": "\u0e1b\u0e23\u0e30\u0e2a\u0e07\u0e04\u0e4c \u0e2a\u0e35\u0e25\u0e1b\u0e23\u0e32\u0e13\u0e35",
+    "email": "lek0805974491@gmail.com",
+    "url": "https://github.com/Prasong1993"
+  },
+  "keywords": [
+    "IRIS",
+    "workflow",
+    "evidence",
+    "verification",
+    "checkpoint",
+    "recovery",
+    "audit"
+  ],
+  "homepage": "https://github.com/Prasong1993/Prasong/tree/main/IRIS/iris-controller-v0.6.2",
+  "repository": "https://github.com/Prasong1993/Prasong",
+  "license": "MIT",
+  "skills": "./skills"
+}

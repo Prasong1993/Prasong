@@ -1,1 +1,17 @@
-{"name":"iris-controller","version":"0.6.2"}
+{
+  "interface": {
+    "capabilities": ["Interactive"],
+    "category": "Productivity",
+    "displayName": "IRIS",
+    "developerName": "ประสงค์ สีลปราณี",
+    "shortDescription": "IRIS controlled five-step workflow",
+    "longDescription": "IRIS executes five gated steps using evidence-first control. Every result is verified before progression and errors are retained for final reporting.",
+    "defaultPrompt": "ทำงานกับ IRIS แบบ ตรวจสอบ → ทำ → ตรวจสอบ → ผ่านจึงไปต่อ จนครบ 5 ขั้น โดยเก็บหลักฐาน ข้อผิดพลาด checkpoint และ audit และไม่รายงานผลที่ยังไม่ตรวจสอบ"
+  },
+  "name": "iris-controller",
+  "version": "0.6.2",
+  "description": "IRIS five-step controlled workflow with evidence, error capture, checkpointing, recovery, audit, and verification.",
+  "author": {"name": "ประสงค์ สีลปราณี", "email": "lek0805974491@gmail.com"},
+  "keywords": ["IRIS","workflow","evidence","verification","checkpoint","recovery","audit"],
+  "skills": "./skills"
+}

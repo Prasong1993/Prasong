@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "iris-controller",
+  "version": "0.6.5",
+  "description": "IRIS five-step controlled workflow with evidence, error capture, checkpointing, recovery, audit, and verification.",
+  "author": {"name":"ประสงค์ สีลปราณี","url":"https://github.com/Prasong1993"},
+  "homepage": "https://github.com/Prasong1993/Prasong/tree/main/IRIS/iris-controller-v0.6.5",
+  "repository": "https://github.com/Prasong1993/Prasong",
+  "license": "MIT",
+  "keywords": ["IRIS","workflow","evidence","verification","checkpoint","recovery","audit"],
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json",
+  "extensions": {"com.openai":{"interface":{
+    "capabilities":["Interactive","Write"],
+    "category":"Productivity",
+    "displayName":"IRIS",
+    "developerName":"ประสงค์ สีลปราณี",
+    "shortDescription":"IRIS controlled five-step workflow",
+    "longDescription":"IRIS executes five gated steps using evidence-first control. Every result is verified before progression and errors are retained for final reporting. Driven by an MCP server with real SQLite persistence.",
+    "defaultPrompt":[
+      "ทำงานกับ IRIS: เริ่ม create_work แล้วทำ 5 ขั้น ทุกขั้นต้อง verify expected vs actual ก่อนผ่าน",
+      "ตรวจสอบงาน IRIS ด้วย get_work_status ดู steps errors checkpoints audit verifications",
+      "บันทึก evidence จริงก่อนส่งมอบ และต้องผ่าน final_verify จึงจะ DELIVERED"
+    ],
+    "brandColor":"#0EA5E9"
+  }}}
+}

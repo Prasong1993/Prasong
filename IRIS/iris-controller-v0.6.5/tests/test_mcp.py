@@ -114,6 +114,8 @@ def test_real_mismatch_exhausts_attempts():
 def test_get_work_status_returns_full_evidence():
     st = call("get_work_status", work_id="MCP-FULL")
     assert st["status"] == "OK"
+    assert st["work_id"] == "MCP-FULL"
+    assert st["work_status"] == "DELIVERED"
     assert len(st["steps"]) > 0
     assert len(st["errors"]) > 0  # recovery failure retained
     assert len(st["checkpoints"]) > 0

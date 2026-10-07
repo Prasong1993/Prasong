@@ -255,7 +255,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = get_work(work_id)
             if not result:
                 return _err("NOT_FOUND", f"work {work_id} not found")
-            return _ok(result)
+            return _ok({
+                "work_id": work_id,
+                "work_status": result["work"]["status"],
+                **result,
+            })
 
         if name == "add_evidence":
             required = ["id", "status", "topic", "fact", "source", "verification_state"]

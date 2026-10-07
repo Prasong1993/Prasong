@@ -1,6 +1,10 @@
 import json
-from database import get_connection,many,one
-from model import STEP_DEFINITIONS,StepStatus
+try:
+    from .database import get_connection, many, one
+    from .model import STEP_DEFINITIONS, StepStatus
+except ImportError:
+    from database import get_connection, many, one
+    from model import STEP_DEFINITIONS, StepStatus
 
 def create_work(work_id,title):
     with get_connection() as conn:

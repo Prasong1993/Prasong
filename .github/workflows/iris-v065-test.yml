@@ -1,0 +1,24 @@
+name: IRIS v0.6.5 tests
+
+on:
+  push:
+    paths:
+      - 'IRIS/iris-controller-v0.6.5/**'
+      - '.github/workflows/iris-v065-test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: IRIS/iris-controller-v0.6.5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r runtime/requirements.txt
+      - name: Run test suite
+        run: python -m pytest -q

@@ -74,7 +74,7 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 - Local test evidence:
   - Ran `python -m py_compile runtime/control_plane.py runtime/mcp_server.py` and `python -m unittest discover -v` in the development worktree.
   - Result: 10 tests passed, 0 failed. Coverage includes evidence gating, permission denial/audit, idempotency, restart persistence, checkpoint recovery, final verification, unknown-outcome blocking, and redaction.
-  - Limitation: the local environment does not have the `mcp` Python package installed. The MCP adapter's import, SDK schema generation, Streamable HTTP behavior, and ChatGPT host connection were NOT RUN. The local unit tests exercise the core implementation; persisted GitHub source was separately read back and blob SHAs recorded.
+  - Limitation: the local environment did not have the `mcp` Python package installed. The MCP adapter's import, SDK schema generation, Streamable HTTP behavior, and ChatGPT host connection were NOT RUN. The local unit tests exercise the core implementation; persisted GitHub source was separately read back and blob SHAs recorded.
 - Official MCP SDK research:
   - Official SDK README and tutorial reviewed: https://github.com/modelcontextprotocol/python-sdk/blob/main/README.md and https://github.com/modelcontextprotocol/python-sdk/blob/main/docs_src/index/tutorial001.py
   - Official docs: https://py.sdk.modelcontextprotocol.io/get-started/
@@ -83,15 +83,31 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 - Persisted source read-back:
   - runtime/control_plane.py blob SHA: 239dfcf30396d0992e0cb9b6258bacd8f9378144
   - runtime/mcp_server.py blob SHA: 9e860c55238463079a92f3d5799f11e6731f4254
-  - runtime/requirements.txt was updated after the SDK version check; final read-back pending.
+  - runtime/requirements.txt final blob SHA: 7c947255c112d7a8f4ada29618248512e631e3ff
   - tests/test_control_plane.py blob SHA: cce5864eaa80a666be55b66cb814e6476f1454de
-  - README.md was updated with verified SDK release/setup status; final read-back pending.
+  - README.md final blob SHA: 60d28d02e04b2b66d77413294a83eb914d78cbfc
   - ARCHITECTURE_DECISION.md blob SHA: c19e695a14de095bc2bfb59ecd904bb2f8057357
 - Safety boundary: README explicitly blocks public exposure of write-capable MCP tools until transport authentication, TLS, least-privilege permissions, approval policy, and secret management are configured and tested.
-- Not run:
-  - Installing MCP SDK 2.3.0 in the local environment, MCP protocol tests, CI, deployment, API-account authentication, Apps SDK Developer Mode, ChatGPT Mobile integration, and live side-effect adapter tests.
+- Not run: MCP SDK installation, MCP protocol tests, CI, deployment, API-account authentication, Apps SDK Developer Mode, ChatGPT Mobile integration, and live side-effect adapter tests.
+
+## Entry EX-0007 — 2026-10-11
+- Status: VERIFIED for final requirements-matrix read-back and post-code branch comparisons; NOT RUN for host integration.
+- Updated REQUIREMENTS_AND_TEST_MATRIX.md to map individual requirements to local test evidence. Current result is a mixture of PASS/PARTIAL/NOT RUN; the matrix does not claim end-to-end completion.
+- Final matrix read-back blob SHA: 14c398cfff78fbfe5b13d6697c16a4021d778f0e.
+- Final comparison against source branch work/iris-control-renovation-20261011:
+  - status ahead, ahead_by=23, behind_by=0.
+  - reported changed paths are exclusively under IRIS/iris-platform-first-control/ (12 project-local paths); no other paths are listed in this comparison.
+- Separate comparison against main:
+  - status ahead, ahead_by=49, behind_by=0.
+  - the compare includes older/inherited IRIS/iris-controller-v0.6.5 changes as well as the new project. Therefore this branch is not a clean three-file diff relative to main; do not merge it or claim only new project files differ from main.
+- Source read-back verified: updated evidence register, ledger, README, requirements, runtime package marker, tests package marker, test matrix, and architecture decision. The exact persisted blob SHAs are recorded in this ledger where relevant.
+- Remaining blockers:
+  1. MCP SDK 2.3.0 is documented in the dependency range but is not installed in the available local runtime; adapter import/protocol tests remain NOT RUN.
+  2. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.
+  3. Apps SDK Developer Mode, API credentials/entitlements, ChatGPT connection, and target mobile behavior are NOT RUN / UNKNOWN.
+  4. CI workflow paths checked by name were not found at the root paths queried; no CI status has been established.
 - Next:
-  1. Read back final requirements/README/evidence/ledger state and compare the working branch against source branch.
-  2. Add direct MCP adapter tests in an environment with the verified SDK installed.
-  3. Implement or configure authenticated transport before any remote deployment.
-  4. Test actual ChatGPT account/mobile support before calling the product host-ready.
+  1. Install and test the declared MCP SDK in a permitted environment, or use an authorized CI runner.
+  2. Implement and test authentication/authorization at the MCP transport boundary before remote exposure.
+  3. Verify target-account Apps SDK availability and mobile behavior.
+  4. Only after those gates, deploy and run host-level acceptance tests; then produce the final release report.

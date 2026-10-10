@@ -44,3 +44,17 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   - This compare does not prove the branch is unchanged relative to main, nor does it prove runtime correctness.
 - Not run:
   - Implementation, tests, CI inspection, deployment, mobile-client validation, and permission/plan validation.
+
+## Entry EX-0003 — 2026-10-11
+- Status: VERIFIED for the updated charter write; read-back verification pending at the time of this entry.
+- Request: adopt an integrated, cautious write workflow and recover from data-ingestion/write warnings by reducing the payload incrementally until the cause is resolved, specifically for writes.
+- Action:
+  1. Re-read PROJECT_CHARTER.md before changing it.
+  2. Added a Write-safety and warning-recovery protocol to PROJECT_CHARTER.md on the explicit working branch.
+  3. GitHub returned commit 3c63a095db7a465c08578608a8b0dd3045433c57 and content blob SHA f3c808c2bd3921e566e8ea88b6666bf115db7d94.
+- Protocol captured:
+  - inspect exact warning; don't blindly repeat the same request;
+  - diagnose size/shape, encoding, stale SHA, permissions, branch/ref, rate-limit, or other cause;
+  - reduce/split only where structurally safe, never discard required content or bypass controls;
+  - read back after successful writes and record unresolved warnings as BLOCKED.
+- Next verification: fetch PROJECT_CHARTER.md from the exact branch, confirm the protocol text is present, then compare the branch to the source branch.

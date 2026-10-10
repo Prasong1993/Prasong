@@ -29,3 +29,18 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   1. Review full official documentation and current platform restrictions.
   2. Inspect current branch and source files; compare branch against source branch.
   3. Derive requirements and test matrix before selecting a minimal architecture.
+
+## Entry EX-0002 — 2026-10-11
+- Status: VERIFIED for branch diff and persisted documentation; BLOCKED for full official-page extraction in this pass.
+- Actions:
+  1. Read back all three project files from the exact working branch; content and blob SHAs were returned.
+  2. Compared working branch against work/iris-control-renovation-20261011. GitHub compare reported status ahead, ahead_by=3, behind_by=0, total_commits=3; the three changes are the three project documentation files listed above.
+  3. Attempted to scrape full official documentation pages; the scraper rejected the request because its required formats parameter was not supplied. No external site or repository content was changed by this failed read.
+- Errors / recovery:
+  - Full-page scrape not recovered in this pass. Existing search results and official source URLs remain discovery-level evidence only; they must not be treated as complete technical review.
+- Current verified scope:
+  - Three project documents exist on the working branch and are readable.
+  - Working branch contains three documentation commits ahead of the source branch and is not behind it at comparison time.
+  - This compare does not prove the branch is unchanged relative to main, nor does it prove runtime correctness.
+- Not run:
+  - Implementation, tests, CI inspection, deployment, mobile-client validation, and permission/plan validation.

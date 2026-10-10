@@ -86,35 +86,23 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 ## Entry EX-0007 — 2026-10-11
 - Status: VERIFIED for requirements-matrix read-back and branch comparisons; NOT RUN for host integration.
 - Matrix initially mapped the first 10 local core tests to acceptance criteria; its read-back was verified.
-- Comparison against source branch work/iris-control-renovation-20261011:
-  - status ahead, ahead_by=23, behind_by=0 at that point.
-  - reported changed paths were exclusively under IRIS/iris-platform-first-control/ (12 project-local paths).
-- Separate comparison against main:
-  - status ahead, ahead_by=49, behind_by=0 at that point.
-  - comparison includes older/inherited IRIS/iris-controller-v0.6.5 changes as well as the new project. This is not a clean three-file diff relative to main.
+- Comparison against source branch work/iris-control-renovation-20261011: ahead_by=23, behind_by=0 at that point; reported changed paths were exclusively under IRIS/iris-platform-first-control/.
+- Separate comparison against main: ahead_by=49, behind_by=0 at that point; comparison includes older/inherited IRIS/iris-controller-v0.6.5 changes as well as the new project. This is not a clean three-file diff relative to main.
 - Account/mobile support, MCP SDK installation, CI, and deployment remained NOT RUN.
 
 ## Entry EX-0008 — 2026-10-11
 - Status: RECOVERED after a security design issue was identified; 12 local core/trusted-boundary tests PASS; MCP SDK/host tests remain NOT RUN.
-- Security issue found during review:
-  - The first MCP adapter accepted a caller-supplied `status="VERIFIED"`. That would allow the caller/model to label its own evidence as verified without a trusted verification step.
-  - This was caught before public deployment. No live remote service was exposed by this implementation.
+- Security issue found during review: the first MCP adapter accepted a caller-supplied `status="VERIFIED"`, which could let the caller/model label its own evidence as verified. This was caught before public deployment; no live remote service was exposed.
 - Corrective change:
   1. Added runtime/verified_control_plane.py. Its public evidence intake rejects VERIFIED supplied by the caller. The internal mark_evidence_verified method checks the observed content digest and records verifier identity/reference; it is deliberately not exposed as an MCP tool.
-  2. Changed runtime/mcp_server.py so the MCP add_evidence tool always stored incoming evidence as UNKNOWN and did not accept a status parameter.
+  2. Changed runtime/mcp_server.py so MCP evidence intake stores UNKNOWN and does not accept a status parameter.
   3. Changed the trusted-verifier mismatch path so its failure audit event commits before the policy error is returned.
   4. Updated tests to assert client self-verification is rejected and a digest mismatch is audited.
-  5. Updated README.md and REQUIREMENTS_AND_TEST_MATRIX.md to state that a real source-fetch/verification adapter was not yet implemented; until then, incoming MCP evidence could not unlock execution.
 - Error/recovery:
-  - The first local test run after applying the new boundary failed because the local test helper still called the old direct VERIFIED path and one test helper name did not match the revised tests. This was a test-harness adaptation issue. The helper and local adapter stub were corrected, then the full local suite passed.
-  - A package installation/version check was attempted with pip, but DNS/network access to PyPI was unavailable in the local environment. No repeated install attempt was made; SDK install/import remains NOT RUN.
+  - The first local test run after applying the new boundary failed because the local test helper still called the old direct VERIFIED path and one helper name did not match the revised tests. This was a test-harness adaptation issue. The helper and local adapter stub were corrected, then the full local suite passed.
+  - A package installation/version check was attempted with pip, but DNS/network access to PyPI was unavailable. No repeated install attempt was made; SDK install/import remains NOT RUN.
 - Latest local verification at that time: `py_compile` succeeded and 12 tests passed, 0 failed.
-- Persisted source read-back:
-  - runtime/verified_control_plane.py SHA: c41ef3898cb1d06c23ace260374840ebecf62661
-  - runtime/mcp_server.py SHA after evidence-boundary change: 90366ec49d7cc0b8326d2c7edfe027ce4505f0c2
-  - tests/test_control_plane.py SHA after trusted-boundary tests: 215e0deed9db684ddaaed37a15886e4dd7a0401a
-  - README.md SHA after blocker documentation: 8ae0856516acff5369b30d02bae34415318502a7
-  - REQUIREMENTS_AND_TEST_MATRIX.md SHA after status update: b29f29b1be45638f23a5f88692ff3140070460e8
+- Persisted source read-back: runtime/verified_control_plane.py SHA c41ef3898cb1d06c23ace260374840ebecf62661; runtime/mcp_server.py SHA 90366ec49d7cc0b8326d2c7edfe027ce4505f0c2; tests/test_control_plane.py SHA 215e0deed9db684ddaaed37a15886e4dd7a0401a; README SHA 8ae0856516acff5369b30d02bae34415318502a7; matrix SHA b29f29b1be45638f23a5f88692ff3140070460e8.
 - Remaining blockers at that time: source verifier NOT IMPLEMENTED; MCP SDK install/adapter tests NOT RUN; authenticated remote transport/hosting BLOCKED; Apps SDK/account/mobile NOT RUN / UNKNOWN.
 
 ## Entry EX-0009 — 2026-10-11
@@ -125,21 +113,31 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   - HTTPS only; rejects userinfo, non-443 ports, query parameters, and IP literals.
   - For live fetches, checks DNS results are public; rejects redirects and non-200 responses; enforces timeout and maximum response size; accepts text/JSON/XML content types and UTF-8 bodies.
   - Stores only content digest/provenance; raw fetched body is not persisted.
-  - Marks evidence VERIFIED only after the server-side fetch and digest comparison succeed. The status means source retrieval/content integrity only, not semantic truth of the claim.
+  - Marks evidence VERIFIED only after server-side fetch and digest comparison succeed. The status means source retrieval/content integrity only, not semantic truth of the claim.
   - Fetch failures from a validated URL are recorded as BLOCKED evidence when possible.
 - Tests added in tests/test_source_verifier.py with injected fake fetchers; no live external HTTP request is claimed as tested.
-- Latest local test run:
-  - `python -m py_compile runtime/control_plane.py runtime/verified_control_plane.py runtime/source_verifier.py runtime/mcp_server.py`
-  - `python -m unittest discover -v`
-  - Result: 17 tests passed, 0 failed.
+- Latest local test run: `py_compile` succeeded and 17 tests passed, 0 failed.
 - Recovery of test duration: injected fake-fetch tests initially attempted DNS resolution and took several seconds. Changed DNS preflight to run only for the live fetcher; rerun completed in about 0.06 seconds with all 17 tests passing.
-- Persisted source read-back:
-  - runtime/source_verifier.py SHA: f3fccbde34d93ace44fb7358e60369e76075984f
-  - runtime/mcp_server.py SHA after source-verifier routing: f0ebc696a2d5745a292dcd4c3c4d892fe04ffc21
-  - tests/test_source_verifier.py SHA: d5198320045f872bf52d4f0729152a334f44e37b
-  - README.md SHA after source-verifier status: 4bffbc764de955b78b5da356750ec85f19ba2c16
-  - REQUIREMENTS_AND_TEST_MATRIX.md SHA after source-verifier test mapping: f1b29df34b2049bd71742fa4094f4d86f59af067
-- Final source-branch comparison for this entry: ahead_by=36, behind_by=0. The reported changed-file list contains only IRIS/iris-platform-first-control paths (15 project-local paths).
+- Persisted source read-back at that time: runtime/source_verifier.py SHA f3fccbde34d93ace44fb7358e60369e76075984f; runtime/mcp_server.py SHA f0ebc696a2d5745a292dcd4c3c4d892fe04ffc21; tests/test_source_verifier.py SHA d5198320045f872bf52d4f0729152a334f44e37b; README SHA 4bffbc764de955b78b5da356750ec85f19ba2c16; matrix SHA f1b29df34b2049bd71742fa4094f4d86f59af067.
+- Source-branch comparison at that time: ahead_by=36, behind_by=0, project-local paths only.
+- Remaining blockers at that time: MCP SDK installation/protocol tests NOT RUN; authenticated remote transport/hosting BLOCKED; DNS pinning review needed; Apps SDK/account/mobile NOT RUN / UNKNOWN.
+
+## Entry EX-0010 — 2026-10-11
+- Status: VERIFIED for updated source-verifier failure audit, tests, and branch read-back; NOT RUN for live external network, MCP SDK, and ChatGPT host/mobile integration.
+- Improvement:
+  - Source verification failures are now recorded as SOURCE_VERIFICATION_FAILED audit events using only the host and reason, not the full URL. This avoids putting potentially sensitive query values into the audit trail.
+  - Added a test asserting a disallowed host is rejected and audited.
+- Latest local test result remains 17 passed, 0 failed after this audit change. The tests use fake fetchers; live external retrieval is NOT RUN.
+- Latest persisted blob SHAs:
+  - runtime/verified_control_plane.py: d5038b31da87c6e06fac8f6f19ac39303e1c6bfc
+  - runtime/source_verifier.py: 18a22218cb06ab8ad8daf1a03974f4a3b767e354
+  - runtime/mcp_server.py: f0ebc696a2d5745a292dcd4c3c4d892fe04ffc21
+  - tests/test_source_verifier.py: ccc6d911b22aa67d45a41d075204a83ca7722af4
+  - README.md: 4bffbc764de955b78b5da356750ec85f19ba2c16
+  - REQUIREMENTS_AND_TEST_MATRIX.md: f1b29df34b2049bd71742fa4094f4d86f59af067
+- Latest branch comparisons:
+  - Against source branch work/iris-control-renovation-20261011: ahead_by=40, behind_by=0; changed paths exclusively under IRIS/iris-platform-first-control/ (15 files).
+  - Against main: ahead_by=66, behind_by=0; comparison includes inherited/older IRIS v0.6.5 files as well as the new project. Do not merge or claim only project-local differences relative to main.
 - Remaining blockers:
   1. MCP SDK 2.3.0 could not be installed because the local environment has no DNS/network access to PyPI; adapter import and protocol tests remain NOT RUN.
   2. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.

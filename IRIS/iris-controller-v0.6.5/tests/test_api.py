@@ -56,6 +56,9 @@ def test_final_verify_mismatch_409_and_persisted(client):
     j = client.get("/work/API-3").json()
     assert j["verifications"][-1]["status"] == "MISMATCH"
     assert j["work"]["status"] != "DELIVERED"
+    assert any(e["error_type"] == "FINAL_VERIFICATION_MISMATCH" for e in j["errors"])
+    assert any(c["state"] == "FINAL_MISMATCH" for c in j["checkpoints"])
+    assert any(e["event_type"] == "VERIFICATION_FAILED" for e in j["events"])
 
 
 def test_duplicate_work_409(client):
@@ -74,3 +77,14 @@ def test_evidence_endpoints(client):
 
 def test_nonexistent_work_404(client):
     assert client.get("/work/NOPE").status_code == 404
+
+
+def test_runtime_status_reads_persisted_events(client):
+    client.post("/work", json={"id": "API-RUNTIME", "title": "runtime query"})
+    response = client.get("/runtime/status", params={"work_id": "API-RUNTIME"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["database"] == "ok"
+    assert payload["work"]["id"] == "API-RUNTIME"
+    assert payload["latest_event"]["event_type"] == "WORK_CREATED"
+    assert payload["latest_event"]["work_id"] == "API-RUNTIME"

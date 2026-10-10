@@ -54,3 +54,13 @@ G7 Final report states verified results, not-run tests, unknowns, and next steps
 
 ## Known limitation at project start
 A GitHub branch and repository contents are accessible via the connected GitHub tool. This does not itself prove code execution, mobile ChatGPT availability, OpenAI account entitlement, or a working deployed endpoint. Those need separate tests/evidence.
+
+## Write-safety and warning-recovery protocol
+- Before writing, confirm repository, exact target branch, target path, current file content, and current blob SHA when updating.
+- Use the smallest logical write that preserves file integrity. Prefer one file per commit for independent changes; do not split structured data in a way that leaves invalid or partial files.
+- If the write tool or GitHub returns a warning/error, stop and inspect the exact response. Do not blindly retry the same payload.
+- Diagnose whether the cause is payload size, invalid content/encoding, stale SHA, permissions, branch/ref, rate limits, or another API constraint.
+- For payload-size or request-shape warnings, reduce the write incrementally: first remove nonessential bulk/formatting, then split into smaller complete files or valid appendable sections where supported. Re-read after each successful write. Do not drop required facts or weaken validation rules just to suppress a warning.
+- If a warning persists or its cause is unclear, mark the write BLOCKED and record the exact warning and recovery attempts; do not claim success.
+- After every successful write, read the exact path back from the target branch and verify the expected content/commit SHA. After related writes, compare branch diffs.
+- This protocol governs data writes only; it does not authorize bypassing security, permission, size, rate-limit, or approval controls.

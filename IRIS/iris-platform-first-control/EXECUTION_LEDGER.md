@@ -64,50 +64,67 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   - runtime/mcp_server.py — MCP tool adapter for health, project/task, evidence, planning, approval, execution authorization, result recording, verification, checkpoint/recovery, and audit.
   - runtime/requirements.txt — MCP SDK dependency range.
   - runtime/__init__.py, tests/test_control_plane.py, tests/__init__.py, and README.md.
-- Safety semantics implemented in the core:
+- Initial safety semantics:
   - Only VERIFIED evidence unlocks the initial plan/execution gates.
   - Permission denial is persisted to audit without advancing execution.
   - Authorization explicitly returns invocation_performed=false; it does not call external tools.
   - Idempotency key reuse with different arguments is rejected.
   - UNKNOWN_OUTCOME moves a task to BLOCKED; checkpoint recovery resets approval and does not replay an in-flight side effect.
   - Audit payloads redact common secret-shaped values.
-- Local test evidence:
+- Local test evidence at that time:
   - Ran `python -m py_compile runtime/control_plane.py runtime/mcp_server.py` and `python -m unittest discover -v` in the development worktree.
-  - Result: 10 tests passed, 0 failed. Coverage includes evidence gating, permission denial/audit, idempotency, restart persistence, checkpoint recovery, final verification, unknown-outcome blocking, and redaction.
-  - Limitation: the local environment did not have the `mcp` Python package installed. The MCP adapter's import, SDK schema generation, Streamable HTTP behavior, and ChatGPT host connection were NOT RUN. The local unit tests exercise the core implementation; persisted GitHub source was separately read back and blob SHAs recorded.
+  - Result: 10 tests passed, 0 failed before trusted-evidence hardening.
+  - Limitation: the local environment did not have the `mcp` Python package installed. The MCP adapter's import, SDK schema generation, Streamable HTTP behavior, and ChatGPT host connection were NOT RUN.
 - Official MCP SDK research:
   - Official SDK README and tutorial reviewed: https://github.com/modelcontextprotocol/python-sdk/blob/main/README.md and https://github.com/modelcontextprotocol/python-sdk/blob/main/docs_src/index/tutorial001.py
   - Official docs: https://py.sdk.modelcontextprotocol.io/get-started/
   - PyPI metadata reported MCP SDK 2.3.0 released 2026-10-02: https://pypi.org/project/mcp/
   - requirements.txt was aligned to `mcp[cli]>=2.3.0,<3.0.0`. Actual installation/import is still NOT RUN.
-- Persisted source read-back:
-  - runtime/control_plane.py blob SHA: 239dfcf30396d0992e0cb9b6258bacd8f9378144
-  - runtime/mcp_server.py blob SHA: 9e860c55238463079a92f3d5799f11e6731f4254
-  - runtime/requirements.txt final blob SHA: 7c947255c112d7a8f4ada29618248512e631e3ff
-  - tests/test_control_plane.py blob SHA: cce5864eaa80a666be55b66cb814e6476f1454de
-  - README.md final blob SHA: 60d28d02e04b2b66d77413294a83eb914d78cbfc
-  - ARCHITECTURE_DECISION.md blob SHA: c19e695a14de095bc2bfb59ecd904bb2f8057357
-- Safety boundary: README explicitly blocks public exposure of write-capable MCP tools until transport authentication, TLS, least-privilege permissions, approval policy, and secret management are configured and tested.
-- Not run: MCP SDK installation, MCP protocol tests, CI, deployment, API-account authentication, Apps SDK Developer Mode, ChatGPT Mobile integration, and live side-effect adapter tests.
+- Source read-back at that time: runtime/control_plane.py SHA 239dfcf30396d0992e0cb9b6258bacd8f9378144; runtime/mcp_server.py SHA 9e860c55238463079a92f3d5799f11e6731f4254; tests/test_control_plane.py SHA cce5864eaa80a666be55b66cb814e6476f1454de; README SHA 60d28d02e04b2b66d77413294a83eb914d78cbfc; ARCHITECTURE_DECISION.md SHA c19e695a14de095bc2bfb59ecd904bb2f8057357.
+- Public exposure was already marked BLOCKED pending authentication, TLS, least privilege, approval policy, and secret management.
 
 ## Entry EX-0007 — 2026-10-11
-- Status: VERIFIED for final requirements-matrix read-back and post-code branch comparisons; NOT RUN for host integration.
-- Updated REQUIREMENTS_AND_TEST_MATRIX.md to map individual requirements to local test evidence. Current result is a mixture of PASS/PARTIAL/NOT RUN; the matrix does not claim end-to-end completion.
-- Final matrix read-back blob SHA: 14c398cfff78fbfe5b13d6697c16a4021d778f0e.
-- Final comparison against source branch work/iris-control-renovation-20261011:
-  - status ahead, ahead_by=23, behind_by=0.
-  - reported changed paths are exclusively under IRIS/iris-platform-first-control/ (12 project-local paths); no other paths are listed in this comparison.
+- Status: VERIFIED for requirements-matrix read-back and branch comparisons; NOT RUN for host integration.
+- Matrix initially mapped the first 10 local core tests to acceptance criteria; its read-back was verified.
+- Comparison against source branch work/iris-control-renovation-20261011:
+  - status ahead, ahead_by=23, behind_by=0 at that point.
+  - reported changed paths were exclusively under IRIS/iris-platform-first-control/ (12 project-local paths).
 - Separate comparison against main:
-  - status ahead, ahead_by=49, behind_by=0.
-  - the compare includes older/inherited IRIS/iris-controller-v0.6.5 changes as well as the new project. Therefore this branch is not a clean three-file diff relative to main; do not merge it or claim only new project files differ from main.
-- Source read-back verified: updated evidence register, ledger, README, requirements, runtime package marker, tests package marker, test matrix, and architecture decision. The exact persisted blob SHAs are recorded in this ledger where relevant.
+  - status ahead, ahead_by=49, behind_by=0 at that point.
+  - comparison includes older/inherited IRIS/iris-controller-v0.6.5 changes as well as the new project. This is not a clean three-file diff relative to main.
+- Account/mobile support, MCP SDK installation, CI, and deployment remained NOT RUN.
+
+## Entry EX-0008 — 2026-10-11
+- Status: RECOVERED after a security design issue was identified; 12 local core/trusted-boundary tests PASS; MCP SDK/host tests remain NOT RUN.
+- Security issue found during review:
+  - The first MCP adapter accepted a caller-supplied `status="VERIFIED"`. That would allow the caller/model to label its own evidence as verified without a trusted verification step.
+  - This was caught before public deployment. No live remote service was exposed by this implementation.
+- Corrective change:
+  1. Added runtime/verified_control_plane.py. Its public evidence intake rejects VERIFIED supplied by the caller. The internal mark_evidence_verified method checks the observed content digest and records verifier identity/reference; it is deliberately not exposed as an MCP tool.
+  2. Changed runtime/mcp_server.py so the MCP add_evidence tool always stores incoming evidence as UNKNOWN and does not accept a status parameter.
+  3. Changed the trusted-verifier mismatch path so its failure audit event commits before the policy error is returned.
+  4. Updated tests to assert client self-verification is rejected and a digest mismatch is audited.
+  5. Updated README.md and REQUIREMENTS_AND_TEST_MATRIX.md to state that a real source-fetch/verification adapter is not yet implemented; until then, incoming MCP evidence cannot unlock execution.
+- Error/recovery:
+  - The first local test run after applying the new boundary failed because the local test helper still called the old direct VERIFIED path and one test helper name did not match the revised tests. This was a test-harness adaptation issue. The helper and local adapter stub were corrected, then the full local suite passed.
+  - A package installation/version check was attempted with pip, but DNS/network access to PyPI was unavailable in the local environment. No repeated install attempt was made; SDK install/import remains NOT RUN.
+- Latest local verification:
+  - `python -m py_compile runtime/control_plane.py runtime/verified_control_plane.py runtime/mcp_server.py`
+  - `python -m unittest discover -v`
+  - Result: 12 tests passed, 0 failed. The suite covers health/IDs, UNKNOWN evidence gating, client self-assertion rejection, verifier digest mismatch audit, execution authorization without invocation, permission denial audit, idempotency, restart persistence, checkpoint recovery with approval reset, final verification reference, UNKNOWN_OUTCOME blocking, and secret-shaped redaction.
+- Persisted source read-back:
+  - runtime/verified_control_plane.py SHA: c41ef3898cb1d06c23ace260374840ebecf62661
+  - runtime/mcp_server.py SHA after evidence-boundary change: 90366ec49d7cc0b8326d2c7edfe027ce4505f0c2
+  - tests/test_control_plane.py SHA after trusted-boundary tests: 215e0deed9db684ddaaed37a15886e4dd7a0401a
+  - README.md SHA after blocker documentation: 8ae0856516acff5369b30d02bae34415318502a7
+  - REQUIREMENTS_AND_TEST_MATRIX.md SHA after status update: b29f29b1be45638f23a5f88692ff3140070460e8
 - Remaining blockers:
-  1. MCP SDK 2.3.0 is documented in the dependency range but is not installed in the available local runtime; adapter import/protocol tests remain NOT RUN.
-  2. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.
-  3. Apps SDK Developer Mode, API credentials/entitlements, ChatGPT connection, and target mobile behavior are NOT RUN / UNKNOWN.
-  4. CI workflow paths checked by name were not found at the root paths queried; no CI status has been established.
+  1. Trusted source-fetch/verification adapter is NOT IMPLEMENTED. MCP intake remains UNKNOWN-only, intentionally fail-closed.
+  2. MCP SDK 2.3.0 cannot be installed in the current local environment; adapter import and protocol tests remain NOT RUN.
+  3. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.
+  4. Apps SDK Developer Mode, API credentials/entitlements, ChatGPT connection, and target mobile behavior are NOT RUN / UNKNOWN.
 - Next:
-  1. Install and test the declared MCP SDK in a permitted environment, or use an authorized CI runner.
-  2. Implement and test authentication/authorization at the MCP transport boundary before remote exposure.
-  3. Verify target-account Apps SDK availability and mobile behavior.
-  4. Only after those gates, deploy and run host-level acceptance tests; then produce the final release report.
+  1. Implement a trusted source retrieval/verification adapter with SSRF protections, redirect checks, timeouts, size limits, and an explicit source policy.
+  2. Install and test MCP SDK 2.3.0 in a permitted environment or authorized CI runner.
+  3. Implement/configure authentication and authorization at the MCP transport boundary before remote exposure.
+  4. Verify target-account Apps SDK availability and mobile behavior; then run host-level acceptance tests.

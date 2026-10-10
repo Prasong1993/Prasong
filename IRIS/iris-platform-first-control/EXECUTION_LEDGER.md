@@ -12,65 +12,34 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   2. Queried GitHub branch search and confirmed the named working branch was returned.
   3. Retrieved the working branch's IRIS directory tree; found existing iris-controller-v0.6.2 and iris-controller-v0.6.5 folders. These are background evidence only and have not been copied or edited by this project.
   4. Searched official OpenAI sources for Responses API/tool use, Agents SDK tracing/guardrails, ChatGPT Apps SDK, and MCP server integration.
-  5. Created IRIS/iris-platform-first-control/PROJECT_CHARTER.md on the working branch. GitHub returned commit 5650c5d1b53d5b4f1063888289457072b28ce29a.
-  6. Created IRIS/iris-platform-first-control/EVIDENCE_REGISTER.md on the working branch. GitHub returned commit 65108e741dad4c9e38bc3307b52af52657d6ccca.
-- Evidence:
-  - Branch ref query returned commit SHA 27e211c7797860703c0af747c5280e8d02dae8ff before these new documentation commits.
-  - Project charter and evidence register were created through GitHub's create-file API targeting the explicit working branch.
-  - Official source URLs are recorded in EVIDENCE_REGISTER.md.
+  5. Created IRIS/iris-platform-first-control/PROJECT_CHARTER.md and EVIDENCE_REGISTER.md on the working branch.
 - Errors / recovery:
   - An initial GitHub fetch using an API URL encoding for the branch path was rejected as an invalid repository path. Recovered by fetching the GitHub tree URL and the Git ref endpoint; no repository content was changed by the failed read.
-- Not run:
-  - No Python/runtime code has been implemented or executed.
-  - No unit/integration/E2E tests or GitHub Actions status have been checked.
-  - No deployment or ChatGPT mobile runtime test has been performed.
-  - No changes to main, merge, or pull request were made.
-- Next:
-  1. Review full official documentation and current platform restrictions.
-  2. Inspect current branch and source files; compare branch against source branch.
-  3. Derive requirements and test matrix before selecting a minimal architecture.
+- Not run: runtime, automated tests, CI, deployment, and mobile-client validation.
 
 ## Entry EX-0002 — 2026-10-11
-- Status: VERIFIED for branch diff and persisted documentation; BLOCKED for full official-page extraction in this pass.
+- Status: VERIFIED for branch diff and persisted documentation; BLOCKED for full-page extraction at that time.
 - Actions:
-  1. Read back all three project files from the exact working branch; content and blob SHAs were returned.
-  2. Compared working branch against work/iris-control-renovation-20261011. GitHub compare reported status ahead, ahead_by=3, behind_by=0, total_commits=3; the three changes are the three project documentation files listed above.
-  3. Attempted to scrape full official documentation pages; the scraper rejected the request because its required formats parameter was not supplied. No external site or repository content was changed by this failed read.
-- Errors / recovery:
-  - Full-page scrape not recovered in this pass. Existing search results and official source URLs remain discovery-level evidence only; they must not be treated as complete technical review.
-- Current verified scope:
-  - Three project documents exist on the working branch and are readable.
-  - Working branch contains three documentation commits ahead of the source branch and is not behind it at comparison time.
-  - This compare does not prove the branch is unchanged relative to main, nor does it prove runtime correctness.
-- Not run:
-  - Implementation, tests, CI inspection, deployment, mobile-client validation, and permission/plan validation.
+  1. Read back the project documents from the exact working branch.
+  2. Compared working branch against work/iris-control-renovation-20261011; the branch was ahead and not behind, with only project documentation listed in that comparison.
+  3. An earlier scrape failed because required `formats` was omitted. This was a research/read failure, not a repository write failure.
+- Limit: this did not prove runtime correctness or a clean diff against main.
 
 ## Entry EX-0003 — 2026-10-11
-- Status: VERIFIED for the updated charter write; read-back verification pending at the time of this entry.
-- Request: adopt an integrated, cautious write workflow and recover from data-ingestion/write warnings by reducing the payload incrementally until the cause is resolved, specifically for writes.
-- Action:
-  1. Re-read PROJECT_CHARTER.md before changing it.
-  2. Added a Write-safety and warning-recovery protocol to PROJECT_CHARTER.md on the explicit working branch.
-  3. GitHub returned commit 3c63a095db7a465c08578608a8b0dd3045433c57 and content blob SHA f3c808c2bd3921e566e8ea88b6666bf115db7d94.
-- Protocol captured:
-  - inspect exact warning; don't blindly repeat the same request;
-  - diagnose size/shape, encoding, stale SHA, permissions, branch/ref, rate-limit, or other cause;
-  - reduce/split only where structurally safe, never discard required content or weaken validation rules;
-  - read back after successful writes and record unresolved warnings as BLOCKED.
-- Next verification: fetch PROJECT_CHARTER.md from the exact branch, confirm the protocol text is present, then compare the branch to the source branch.
+- Status: VERIFIED for charter write and subsequent read-back.
+- Action: Added a write-safety and warning-recovery protocol to PROJECT_CHARTER.md on the explicit working branch.
+- Protocol: inspect warnings; diagnose payload, encoding, stale SHA, permission, branch/ref, or rate-limit causes; reduce only structurally safe payloads; read back after successful writes; never bypass security or discard required facts to silence a warning.
 
 ## Entry EX-0004 — 2026-10-11
 - Status: VERIFIED.
-- Read-back: fetched PROJECT_CHARTER.md from work/iris-control-renovation-20261011-copy and confirmed the complete write-safety and warning-recovery protocol is present. Returned content blob SHA: f3c808c2bd3921e566e8ea88b6666bf115db7d94.
-- Branch comparison: GitHub compare reports work/iris-control-renovation-20261011-copy ahead_by=6, behind_by=0 relative to work/iris-control-renovation-20261011. The reported changed-file set contains only PROJECT_CHARTER.md, EVIDENCE_REGISTER.md, and EXECUTION_LEDGER.md.
-- Warnings during these writes: no GitHub write warning/error was returned. One earlier documentation scrape attempt failed due to a missing required parameter; this was a read/research failure, not a write warning, and is recorded in EX-0002.
-- Limits: this verifies persisted documentation and branch comparison only; no application runtime or tests were run.
+- Read-back: the charter contains the full write-safety protocol.
+- Comparison against source branch reported the project documents only at that time. No runtime tests had been run.
 
 ## Entry EX-0005 — 2026-10-11
-- Status: VERIFIED for relevant official documentation sections, evidence-register update, and test-matrix write/read path check; NOT RUN for implementation/runtime.
-- Official documentation reviewed using direct page retrieval/highlights:
+- Status: VERIFIED for relevant official documentation sections, evidence-register update, and requirements-matrix creation; NOT RUN for implementation/runtime at that time.
+- Official documentation sections reviewed:
   1. Responses API migration/benefits: https://developers.openai.com/api/docs/guides/migrate-to-responses
-  2. Tool calling: https://developers.openai.com/api/docs/guides/tools
+  2. Tools: https://developers.openai.com/api/docs/guides/tools
   3. Function calling flow: https://developers.openai.com/api/docs/guides/function-calling
   4. Agents SDK: https://developers.openai.com/api/docs/guides/agents/sdk
   5. Guardrails and human review: https://developers.openai.com/api/docs/guides/agents/guardrails-approvals
@@ -79,24 +48,50 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   8. Apps SDK: https://help.openai.com/en/articles/12515353-build-with-the-apps-sdk
   9. API data guidance: https://developers.openai.com/api/docs/guides/your-data
   10. Production/key/rate-limit guidance: https://developers.openai.com/api/docs/guides/production-best-practices
-- Confirmed implications:
-  - Responses API and Agents SDK provide model/tool execution and observability features, but application-side tools and a durable project ledger remain separate responsibilities.
-  - Function calling is not itself execution: application code must receive, validate, authorize, and execute tool calls.
-  - Remote MCP has server/authentication and configurable approval requirements; the Apps SDK article describes preview/testing through Developer Mode.
-  - ChatGPT mobile availability and account entitlements for the intended app flow remain UNKNOWN pending actual target-host testing.
-  - API keys must remain outside source code and public repositories.
-- Updated EVIDENCE_REGISTER.md using the current blob SHA. GitHub returned commit 98d8f89623643a19eacebe5f53afbd4eb6c2b125 and new content SHA 79ee74c007e4a25aaf81885b2586ca073d08c695.
-- Created REQUIREMENTS_AND_TEST_MATRIX.md after verifying the target path did not exist. GitHub returned commit 040e00d2254aab8b35264823cf744e76085aa000.
-- Branch comparison:
-  - Working branch vs source branch work/iris-control-renovation-20261011: ahead_by=7, behind_by=0; changed paths reported are the three project documents at comparison time.
-  - Working branch vs main: ahead_by=33, behind_by=0. The comparison lists inherited/older IRIS paths as well as project docs; this is not a clean three-file diff relative to main and must not be described as one.
-- Plugin inventory:
-  - Existing private plugins found: chatgpt-control-api v0.2.3, iris-step1 v0.1.0, and iris-controller v0.6.19.
-  - Their existence is verified; intended reuse or update target is not yet selected. Do not create a duplicate or update an older plugin until the architecture decision establishes which, if any, is appropriate.
+- Findings: model tool-call proposals are not execution or authorization; tool execution is application-side. Apps SDK testing requires Developer Mode in the documented preview flow. Mobile/account access remains UNKNOWN until tested on the target host. API keys must remain outside source control.
+- Updated EVIDENCE_REGISTER.md and created REQUIREMENTS_AND_TEST_MATRIX.md.
+- Compared working branch with source branch: ahead_by=7, behind_by=0 at that time. Compared with main separately: ahead_by=33, behind_by=0; main comparison includes older/inherited IRIS paths and is not a clean three-document diff.
+- Existing private plugin inventory: chatgpt-control-api v0.2.3, iris-step1 v0.1.0, iris-controller v0.6.19. Inventory was inspected, but no plugin was updated or duplicated because the new architecture has not selected a specific reusable plugin.
+- Not run: implementation, tests, CI, deployment, ChatGPT connection/mobile, API credentials, and account/workspace entitlements.
+
+## Entry EX-0006 — 2026-10-11
+- Status: VERIFIED for provisional architecture record, core implementation write/read-back, and local core test run; NOT RUN for MCP adapter import/host behavior; BLOCKED for public deployment until authentication and hosting are configured.
+- Architecture:
+  - Created ARCHITECTURE_DECISION.md. Provisional first choice is ChatGPT Apps SDK + MCP with a thin deterministic control plane, conditional on account/mobile support. Responses API + custom UI is a fallback, not assumed to be the ChatGPT mobile app. Existing plugins are not reused until deliberately selected.
+  - Threat/permission controls include server-side authorization, explicit approvals, idempotency, timeouts, secret redaction, append-only audit, and fail-closed gates.
+- Code authored on the working branch:
+  - runtime/control_plane.py — SQLite schema and deterministic project/task/evidence/checkpoint/audit/idempotency/policy operations.
+  - runtime/mcp_server.py — MCP tool adapter for health, project/task, evidence, planning, approval, execution authorization, result recording, verification, checkpoint/recovery, and audit.
+  - runtime/requirements.txt — MCP SDK dependency range.
+  - runtime/__init__.py, tests/test_control_plane.py, tests/__init__.py, and README.md.
+- Safety semantics implemented in the core:
+  - Only VERIFIED evidence unlocks the initial plan/execution gates.
+  - Permission denial is persisted to audit without advancing execution.
+  - Authorization explicitly returns invocation_performed=false; it does not call external tools.
+  - Idempotency key reuse with different arguments is rejected.
+  - UNKNOWN_OUTCOME moves a task to BLOCKED; checkpoint recovery resets approval and does not replay an in-flight side effect.
+  - Audit payloads redact common secret-shaped values.
+- Local test evidence:
+  - Ran `python -m py_compile runtime/control_plane.py runtime/mcp_server.py` and `python -m unittest discover -v` in the development worktree.
+  - Result: 10 tests passed, 0 failed. Coverage includes evidence gating, permission denial/audit, idempotency, restart persistence, checkpoint recovery, final verification, unknown-outcome blocking, and redaction.
+  - Limitation: the local environment does not have the `mcp` Python package installed. The MCP adapter's import, SDK schema generation, Streamable HTTP behavior, and ChatGPT host connection were NOT RUN. The local unit tests exercise the core implementation; persisted GitHub source was separately read back and blob SHAs recorded.
+- Official MCP SDK research:
+  - Official SDK README and tutorial reviewed: https://github.com/modelcontextprotocol/python-sdk/blob/main/README.md and https://github.com/modelcontextprotocol/python-sdk/blob/main/docs_src/index/tutorial001.py
+  - Official docs: https://py.sdk.modelcontextprotocol.io/get-started/
+  - PyPI metadata reported MCP SDK 2.3.0 released 2026-10-02: https://pypi.org/project/mcp/
+  - requirements.txt was aligned to `mcp[cli]>=2.3.0,<3.0.0`. Actual installation/import is still NOT RUN.
+- Persisted source read-back:
+  - runtime/control_plane.py blob SHA: 239dfcf30396d0992e0cb9b6258bacd8f9378144
+  - runtime/mcp_server.py blob SHA: 9e860c55238463079a92f3d5799f11e6731f4254
+  - runtime/requirements.txt was updated after the SDK version check; final read-back pending.
+  - tests/test_control_plane.py blob SHA: cce5864eaa80a666be55b66cb814e6476f1454de
+  - README.md was updated with verified SDK release/setup status; final read-back pending.
+  - ARCHITECTURE_DECISION.md blob SHA: c19e695a14de095bc2bfb59ecd904bb2f8057357
+- Safety boundary: README explicitly blocks public exposure of write-capable MCP tools until transport authentication, TLS, least-privilege permissions, approval policy, and secret management are configured and tested.
 - Not run:
-  - Runtime implementation, unit/integration/E2E tests, CI checks, deployed endpoint tests, and ChatGPT mobile host tests.
-  - Account-specific API key access, Apps SDK Developer Mode access, and workspace/plan permissions.
+  - Installing MCP SDK 2.3.0 in the local environment, MCP protocol tests, CI, deployment, API-account authentication, Apps SDK Developer Mode, ChatGPT Mobile integration, and live side-effect adapter tests.
 - Next:
-  1. Read back the new matrix and updated evidence register.
-  2. Compare the working branch with its source branch again after the latest commits.
-  3. Complete architecture options and threat/permission review before coding.
+  1. Read back final requirements/README/evidence/ledger state and compare the working branch against source branch.
+  2. Add direct MCP adapter tests in an environment with the verified SDK installed.
+  3. Implement or configure authenticated transport before any remote deployment.
+  4. Test actual ChatGPT account/mobile support before calling the product host-ready.

@@ -1,14 +1,14 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 try:
-    from .database import init_db, many, get_connection
-    from .controller import create_work, run_step, get_work
+    from .database import init_db, many, get_connection, runtime_status, record_event
+    from .controller import create_work, run_step, get_work, record_error, checkpoint
     from .model import STEP_DEFINITIONS, WORKING_STRUCTURE
 except ImportError:
-    from database import init_db, many, get_connection
-    from controller import create_work, run_step, get_work
+    from database import init_db, many, get_connection, runtime_status, record_event
+    from controller import create_work, run_step, get_work, record_error, checkpoint
     from model import STEP_DEFINITIONS, WORKING_STRUCTURE
 
 APP_VERSION = '0.6.5'
@@ -56,9 +56,27 @@ def health():
         init_db()
         with get_connection() as conn:
             conn.execute('SELECT 1').fetchone()
-        return {'status':'ok','database':'ok','version':APP_VERSION}
+        return {'status':'ok','database':'ok','db_path':str(__import__('database').get_db_path()) if __package__ in (None, '') else None,'version':APP_VERSION}
     except Exception as exc:
         raise HTTPException(503, f'database unavailable: {exc}')
+
+@app.get('/runtime/status')
+def query_runtime_status(work_id: str | None = Query(default=None, max_length=128)):
+    """Read persisted runtime state. Empty fields mean no corresponding event exists."""
+    try:
+        status = runtime_status(work_id)
+        if work_id:
+            work = get_work(work_id)
+            if not work:
+                raise HTTPException(404, 'work not found')
+            status['work'] = work['work']
+            status['steps'] = work['steps']
+        status['version'] = APP_VERSION
+        return status
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(503, f'runtime status unavailable: {exc}')
 
 @app.get('/structure')
 def structure():
@@ -127,6 +145,16 @@ def final_verify(work_id: str, item: FinalVerifyIn):
         if status=='VERIFIED':
             conn.execute("UPDATE work_units SET status='DELIVERED',updated_at=CURRENT_TIMESTAMP WHERE id=?",
                          (work_id,))
+    record_event('VERIFICATION_PASSED' if status == 'VERIFIED' else 'VERIFICATION_FAILED',
+                 work_id=work_id, status=status,
+                 payload={'expected':item.expected,'actual':item.actual,'note':item.note})
     if status!='VERIFIED':
+        record_error(work_id, 0, 0, 'FINAL_VERIFICATION_MISMATCH',
+                     'final expected vs actual mismatch; result retained as unverified',
+                     item.expected, item.actual, 'MISMATCH', 'work not delivered',
+                     'correct output and retry final verification', 'MISMATCH',
+                     'never promote mismatch to VERIFIED')
+        checkpoint(work_id, 0, 'FINAL_MISMATCH',
+                   {'expected':item.expected,'actual':item.actual,'retained':True})
         raise HTTPException(409, 'final verification mismatch; result retained as unverified')
     return {'status':'VERIFIED','work_id':work_id}

@@ -27,9 +27,10 @@ class SourceVerifierTests(unittest.TestCase):
         self.assertEqual(result["evidence"]["content_sha256"], hashlib.sha256(self.body).hexdigest())
         self.assertEqual(self.cp.get_evidence(self.tid)[0]["status"], "VERIFIED")
 
-    def test_untrusted_host_rejected_before_fetch(self):
+    def test_untrusted_host_rejected_before_fetch_and_audited(self):
         with self.assertRaisesRegex(ControlPlaneError, "SOURCE_HOST_NOT_ALLOWLISTED"):
             self.verifier.ingest(self.tid, source_url="https://untrusted.example/secret", claim="test")
+        self.assertTrue(any(e["event_type"] == "SOURCE_VERIFICATION_FAILED" for e in self.cp.get_audit(self.tid)))
 
     def test_query_parameters_rejected_to_avoid_secret_leaks(self):
         with self.assertRaisesRegex(ControlPlaneError, "SOURCE_URL_QUERY_NOT_ALLOWED"):

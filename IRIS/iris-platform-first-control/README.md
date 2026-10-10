@@ -5,7 +5,7 @@ A new, isolated control-plane implementation. ChatGPT/OpenAI remains the preferr
 ## Current verification status
 
 - Deterministic SQLite core: implemented and locally unit-tested in the development workspace.
-- MCP adapter: authored against the current official MCP Python SDK interface; the SDK is not installed in the local test environment, so adapter import and host behavior are **NOT RUN**.
+- MCP adapter: authored against the current official MCP Python SDK interface. The development environment did not have the SDK installed, so adapter import and host behavior are **NOT RUN**.
 - ChatGPT Apps SDK/account/mobile connection: **NOT RUN**.
 - Public deployment: **BLOCKED** until authenticated transport, least-privilege permissions, and hosting are configured and tested.
 
@@ -19,10 +19,11 @@ python -m unittest discover -v
 
 ## MCP development
 
-Install the dependency in `runtime/requirements.txt`, then use the current official MCP SDK CLI:
+The official PyPI package page reported MCP Python SDK 2.3.0, released 2026-10-02, during project research. Install the declared dependency and use the official SDK CLI:
 
 ```bash
-uv run --with "mcp[cli]>=2.0.0,<3.0.0" mcp dev runtime/mcp_server.py
+uv sync --directory runtime
+uv run --with "mcp[cli]>=2.3.0,<3.0.0" mcp dev runtime/mcp_server.py
 ```
 
 This is a development/inspection path, not proof of ChatGPT connectivity. Do not expose write-capable MCP tools publicly until transport authentication, TLS, least-privilege permissions, approval policy, and secret management are configured and tested.

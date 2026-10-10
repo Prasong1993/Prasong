@@ -55,7 +55,7 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 - Protocol captured:
   - inspect exact warning; don't blindly repeat the same request;
   - diagnose size/shape, encoding, stale SHA, permissions, branch/ref, rate-limit, or other cause;
-  - reduce/split only where structurally safe, never discard required content or bypass controls;
+  - reduce/split only where structurally safe, never discard required content or weaken validation rules;
   - read back after successful writes and record unresolved warnings as BLOCKED.
 - Next verification: fetch PROJECT_CHARTER.md from the exact branch, confirm the protocol text is present, then compare the branch to the source branch.
 
@@ -65,3 +65,38 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 - Branch comparison: GitHub compare reports work/iris-control-renovation-20261011-copy ahead_by=6, behind_by=0 relative to work/iris-control-renovation-20261011. The reported changed-file set contains only PROJECT_CHARTER.md, EVIDENCE_REGISTER.md, and EXECUTION_LEDGER.md.
 - Warnings during these writes: no GitHub write warning/error was returned. One earlier documentation scrape attempt failed due to a missing required parameter; this was a read/research failure, not a write warning, and is recorded in EX-0002.
 - Limits: this verifies persisted documentation and branch comparison only; no application runtime or tests were run.
+
+## Entry EX-0005 — 2026-10-11
+- Status: VERIFIED for relevant official documentation sections, evidence-register update, and test-matrix write/read path check; NOT RUN for implementation/runtime.
+- Official documentation reviewed using direct page retrieval/highlights:
+  1. Responses API migration/benefits: https://developers.openai.com/api/docs/guides/migrate-to-responses
+  2. Tool calling: https://developers.openai.com/api/docs/guides/tools
+  3. Function calling flow: https://developers.openai.com/api/docs/guides/function-calling
+  4. Agents SDK: https://developers.openai.com/api/docs/guides/agents/sdk
+  5. Guardrails and human review: https://developers.openai.com/api/docs/guides/agents/guardrails-approvals
+  6. Agents tracing: https://developers.openai.com/api/docs/guides/agents-api/tracing
+  7. MCP servers: https://developers.openai.com/api/docs/guides/tools-connectors-mcp
+  8. Apps SDK: https://help.openai.com/en/articles/12515353-build-with-the-apps-sdk
+  9. API data guidance: https://developers.openai.com/api/docs/guides/your-data
+  10. Production/key/rate-limit guidance: https://developers.openai.com/api/docs/guides/production-best-practices
+- Confirmed implications:
+  - Responses API and Agents SDK provide model/tool execution and observability features, but application-side tools and a durable project ledger remain separate responsibilities.
+  - Function calling is not itself execution: application code must receive, validate, authorize, and execute tool calls.
+  - Remote MCP has server/authentication and configurable approval requirements; the Apps SDK article describes preview/testing through Developer Mode.
+  - ChatGPT mobile availability and account entitlements for the intended app flow remain UNKNOWN pending actual target-host testing.
+  - API keys must remain outside source code and public repositories.
+- Updated EVIDENCE_REGISTER.md using the current blob SHA. GitHub returned commit 98d8f89623643a19eacebe5f53afbd4eb6c2b125 and new content SHA 79ee74c007e4a25aaf81885b2586ca073d08c695.
+- Created REQUIREMENTS_AND_TEST_MATRIX.md after verifying the target path did not exist. GitHub returned commit 040e00d2254aab8b35264823cf744e76085aa000.
+- Branch comparison:
+  - Working branch vs source branch work/iris-control-renovation-20261011: ahead_by=7, behind_by=0; changed paths reported are the three project documents at comparison time.
+  - Working branch vs main: ahead_by=33, behind_by=0. The comparison lists inherited/older IRIS paths as well as project docs; this is not a clean three-file diff relative to main and must not be described as one.
+- Plugin inventory:
+  - Existing private plugins found: chatgpt-control-api v0.2.3, iris-step1 v0.1.0, and iris-controller v0.6.19.
+  - Their existence is verified; intended reuse or update target is not yet selected. Do not create a duplicate or update an older plugin until the architecture decision establishes which, if any, is appropriate.
+- Not run:
+  - Runtime implementation, unit/integration/E2E tests, CI checks, deployed endpoint tests, and ChatGPT mobile host tests.
+  - Account-specific API key access, Apps SDK Developer Mode access, and workspace/plan permissions.
+- Next:
+  1. Read back the new matrix and updated evidence register.
+  2. Compare the working branch with its source branch again after the latest commits.
+  3. Complete architecture options and threat/permission review before coding.

@@ -101,30 +101,52 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   - This was caught before public deployment. No live remote service was exposed by this implementation.
 - Corrective change:
   1. Added runtime/verified_control_plane.py. Its public evidence intake rejects VERIFIED supplied by the caller. The internal mark_evidence_verified method checks the observed content digest and records verifier identity/reference; it is deliberately not exposed as an MCP tool.
-  2. Changed runtime/mcp_server.py so the MCP add_evidence tool always stores incoming evidence as UNKNOWN and does not accept a status parameter.
+  2. Changed runtime/mcp_server.py so the MCP add_evidence tool always stored incoming evidence as UNKNOWN and did not accept a status parameter.
   3. Changed the trusted-verifier mismatch path so its failure audit event commits before the policy error is returned.
   4. Updated tests to assert client self-verification is rejected and a digest mismatch is audited.
-  5. Updated README.md and REQUIREMENTS_AND_TEST_MATRIX.md to state that a real source-fetch/verification adapter is not yet implemented; until then, incoming MCP evidence cannot unlock execution.
+  5. Updated README.md and REQUIREMENTS_AND_TEST_MATRIX.md to state that a real source-fetch/verification adapter was not yet implemented; until then, incoming MCP evidence could not unlock execution.
 - Error/recovery:
   - The first local test run after applying the new boundary failed because the local test helper still called the old direct VERIFIED path and one test helper name did not match the revised tests. This was a test-harness adaptation issue. The helper and local adapter stub were corrected, then the full local suite passed.
   - A package installation/version check was attempted with pip, but DNS/network access to PyPI was unavailable in the local environment. No repeated install attempt was made; SDK install/import remains NOT RUN.
-- Latest local verification:
-  - `python -m py_compile runtime/control_plane.py runtime/verified_control_plane.py runtime/mcp_server.py`
-  - `python -m unittest discover -v`
-  - Result: 12 tests passed, 0 failed. The suite covers health/IDs, UNKNOWN evidence gating, client self-assertion rejection, verifier digest mismatch audit, execution authorization without invocation, permission denial audit, idempotency, restart persistence, checkpoint recovery with approval reset, final verification reference, UNKNOWN_OUTCOME blocking, and secret-shaped redaction.
+- Latest local verification at that time: `py_compile` succeeded and 12 tests passed, 0 failed.
 - Persisted source read-back:
   - runtime/verified_control_plane.py SHA: c41ef3898cb1d06c23ace260374840ebecf62661
   - runtime/mcp_server.py SHA after evidence-boundary change: 90366ec49d7cc0b8326d2c7edfe027ce4505f0c2
   - tests/test_control_plane.py SHA after trusted-boundary tests: 215e0deed9db684ddaaed37a15886e4dd7a0401a
   - README.md SHA after blocker documentation: 8ae0856516acff5369b30d02bae34415318502a7
   - REQUIREMENTS_AND_TEST_MATRIX.md SHA after status update: b29f29b1be45638f23a5f88692ff3140070460e8
+- Remaining blockers at that time: source verifier NOT IMPLEMENTED; MCP SDK install/adapter tests NOT RUN; authenticated remote transport/hosting BLOCKED; Apps SDK/account/mobile NOT RUN / UNKNOWN.
+
+## Entry EX-0009 — 2026-10-11
+- Status: VERIFIED for local source-verifier unit tests and GitHub writes/read-backs; NOT RUN for live external source retrieval, MCP SDK, and ChatGPT host/mobile integration.
+- Implemented runtime/source_verifier.py and routed the MCP add_evidence tool through it.
+- Source-verifier behavior:
+  - Exact hostname allowlist (default list includes official OpenAI/MCP documentation hosts and GitHub/PyPI).
+  - HTTPS only; rejects userinfo, non-443 ports, query parameters, and IP literals.
+  - For live fetches, checks DNS results are public; rejects redirects and non-200 responses; enforces timeout and maximum response size; accepts text/JSON/XML content types and UTF-8 bodies.
+  - Stores only content digest/provenance; raw fetched body is not persisted.
+  - Marks evidence VERIFIED only after the server-side fetch and digest comparison succeed. The status means source retrieval/content integrity only, not semantic truth of the claim.
+  - Fetch failures from a validated URL are recorded as BLOCKED evidence when possible.
+- Tests added in tests/test_source_verifier.py with injected fake fetchers; no live external HTTP request is claimed as tested.
+- Latest local test run:
+  - `python -m py_compile runtime/control_plane.py runtime/verified_control_plane.py runtime/source_verifier.py runtime/mcp_server.py`
+  - `python -m unittest discover -v`
+  - Result: 17 tests passed, 0 failed.
+- Recovery of test duration: injected fake-fetch tests initially attempted DNS resolution and took several seconds. Changed DNS preflight to run only for the live fetcher; rerun completed in about 0.06 seconds with all 17 tests passing.
+- Persisted source read-back:
+  - runtime/source_verifier.py SHA: f3fccbde34d93ace44fb7358e60369e76075984f
+  - runtime/mcp_server.py SHA after source-verifier routing: f0ebc696a2d5745a292dcd4c3c4d892fe04ffc21
+  - tests/test_source_verifier.py SHA: d5198320045f872bf52d4f0729152a334f44e37b
+  - README.md SHA after source-verifier status: 4bffbc764de955b78b5da356750ec85f19ba2c16
+  - REQUIREMENTS_AND_TEST_MATRIX.md SHA after source-verifier test mapping: f1b29df34b2049bd71742fa4094f4d86f59af067
+- Final source-branch comparison for this entry: ahead_by=36, behind_by=0. The reported changed-file list contains only IRIS/iris-platform-first-control paths (15 project-local paths).
 - Remaining blockers:
-  1. Trusted source-fetch/verification adapter is NOT IMPLEMENTED. MCP intake remains UNKNOWN-only, intentionally fail-closed.
-  2. MCP SDK 2.3.0 cannot be installed in the current local environment; adapter import and protocol tests remain NOT RUN.
-  3. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.
-  4. Apps SDK Developer Mode, API credentials/entitlements, ChatGPT connection, and target mobile behavior are NOT RUN / UNKNOWN.
+  1. MCP SDK 2.3.0 could not be installed because the local environment has no DNS/network access to PyPI; adapter import and protocol tests remain NOT RUN.
+  2. No authenticated remote transport or hosting configuration has been established. Public deployment remains BLOCKED.
+  3. DNS preflight is not DNS pinning; review network egress/DNS pinning controls before production.
+  4. Apps SDK Developer Mode, API credentials/entitlements, ChatGPT connection, and target mobile behavior remain NOT RUN / UNKNOWN.
 - Next:
-  1. Implement a trusted source retrieval/verification adapter with SSRF protections, redirect checks, timeouts, size limits, and an explicit source policy.
-  2. Install and test MCP SDK 2.3.0 in a permitted environment or authorized CI runner.
-  3. Implement/configure authentication and authorization at the MCP transport boundary before remote exposure.
-  4. Verify target-account Apps SDK availability and mobile behavior; then run host-level acceptance tests.
+  1. Verify MCP adapter imports and protocol schemas in an environment with MCP SDK 2.3.0 installed.
+  2. Implement/configure authenticated MCP transport and least-privilege access before any remote deployment.
+  3. Test live source retrieval in the authorized environment, including redirect, DNS, timeout, content-type, and body-size cases.
+  4. Verify target-account Apps SDK availability and mobile behavior before calling the project host-ready.

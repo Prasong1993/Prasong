@@ -34,6 +34,8 @@ def test_additive_schema_and_event_round_trip(tmp_path, monkeypatch):
         assert state["database"] == "ok"
         assert state["latest_event"]["event_type"] == "EVIDENCE_COLLECTED"
         assert state["latest_event"]["status"] == "VERIFIED"
+        database.record_event("SECOND_EVENT", status="VERIFIED", payload={"sequence": 2})
+        assert database.runtime_status()["latest_event"]["event_type"] == "SECOND_EVENT"
         assert database.one("SELECT version FROM schema_migrations WHERE version=1") is not None
     finally:
         database.DB_PATH = original_db_path

@@ -107,6 +107,11 @@ class SourceVerifier:
             return {"status": "VERIFIED", "verification_scope": "SOURCE_RETRIEVAL_AND_CONTENT_DIGEST_ONLY",
                     "evidence": verified, "content_type": content_type, "content_bytes": len(body)}
         except ControlPlaneError as exc:
+            try:
+                host = urlsplit(source_url).hostname or "[INVALID]"
+                self.control.record_verification_failure(task_id, source_host=host.lower(), reason=str(exc))
+            except Exception:
+                pass
             if normalized:
                 try:
                     self.control.add_evidence(task_id, source_url=normalized,

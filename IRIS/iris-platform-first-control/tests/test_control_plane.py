@@ -1,13 +1,14 @@
 import tempfile
 import unittest
 from pathlib import Path
-from runtime.control_plane import ControlPlane, ControlPlaneError
+from runtime.control_plane import ControlPlaneError
+from runtime.verified_control_plane import VerifiedControlPlane
 
 class ControlPlaneTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.db = Path(self.tmp.name) / "iris.sqlite3"
-        self.cp = ControlPlane(self.db)
+        self.cp = VerifiedControlPlane(self.db)
         self.project = self.cp.create_project("test project")
         self.task = self.cp.create_task(self.project["project_id"], "controlled work")
         self.tid = self.task["task_id"]
@@ -15,10 +16,13 @@ class ControlPlaneTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def evidence(self, status="VERIFIED"):
-        return self.cp.add_evidence(self.tid, source_url="https://example.com/spec",
-            retrieved_at="2026-10-11T00:00:00Z", content="verified source text",
-            status=status, claim="supports test requirement")
+    def evidence(self, status="VERIFIED", content="verified source text", claim="supports test requirement"):
+        item = self.cp.add_evidence(self.tid, source_url="https://example.com/spec",
+            retrieved_at="2026-10-11T00:00:00Z", content=content, status="UNKNOWN", claim=claim)
+        if status == "VERIFIED":
+            return self.cp.mark_evidence_verified(item["evidence_id"], verifier_id="test-verifier",
+                verification_ref="fixture://source-checked", observed_sha256=item["content_sha256"])
+        return item
 
     def authorize(self, key="once"):
         self.cp.set_plan(self.tid, [{"step":"safe step"}])
@@ -35,6 +39,20 @@ class ControlPlaneTests(unittest.TestCase):
         self.evidence("UNKNOWN")
         with self.assertRaisesRegex(ControlPlaneError, "VERIFIED_EVIDENCE_REQUIRED"):
             self.cp.set_plan(self.tid, [{"step":"do work"}])
+
+    def test_client_cannot_self_assert_verified(self):
+        with self.assertRaisesRegex(ControlPlaneError, "VERIFIED_STATUS_REQUIRES_TRUSTED_VERIFIER"):
+            self.cp.add_evidence(self.tid, source_url="https://example.com/spec",
+                retrieved_at="2026-10-11T00:00:00Z", content="untrusted", status="VERIFIED", claim="fake verified")
+
+    def test_verifier_digest_mismatch_is_audited(self):
+        item = self.evidence("UNKNOWN")
+        with self.assertRaisesRegex(ControlPlaneError, "EVIDENCE_DIGEST_MISMATCH"):
+            self.cp.mark_evidence_verified(item["evidence_id"], verifier_id="test-verifier",
+                verification_ref="fixture://mismatch", observed_sha256="0" * 64)
+        events = self.cp.get_audit(self.tid)
+        self.assertTrue(any(e["event_type"]=="EVIDENCE_VERIFICATION_FAILED" for e in events))
+        self.assertEqual(self.cp.get_evidence(self.tid)[0]["status"], "UNKNOWN")
 
     def test_gate_authorizes_but_does_not_invoke(self):
         self.evidence()
@@ -65,11 +83,11 @@ class ControlPlaneTests(unittest.TestCase):
     def test_restart_persists_task_evidence_checkpoint_and_audit(self):
         self.evidence()
         cp = self.cp.checkpoint(self.tid)
-        self.cp = ControlPlane(self.db)
+        self.cp = VerifiedControlPlane(self.db)
         self.assertEqual(self.cp.get_task(self.tid)["status"], "RECEIVED")
         self.assertEqual(cp["snapshot"]["task"]["task_id"], self.tid)
         self.assertEqual(len(self.cp.get_evidence(self.tid)), 1)
-        self.assertGreaterEqual(len(self.cp.get_audit(self.tid)), 3)
+        self.assertGreaterEqual(len(self.cp.get_audit(self.tid)), 4)
 
     def test_success_requires_verification_reference(self):
         self.evidence()
@@ -104,9 +122,7 @@ class ControlPlaneTests(unittest.TestCase):
                 permission_granted=True, idempotency_key="after-restore")
 
     def test_audit_redacts_secret_shaped_values(self):
-        self.cp.add_evidence(self.tid, source_url="https://example.com/spec",
-            retrieved_at="2026-10-11T00:00:00Z", content="safe", status="VERIFIED",
-            claim="api_key=sk-abcdefghijklmnopqr")
+        self.evidence(content="safe", claim="api_key=sk-abcdefghijklmnopqr")
         audit = str(self.cp.get_audit(self.tid))
         self.assertNotIn("sk-abcdefghijklmnopqr", audit)
         self.assertIn("REDACTED", audit)

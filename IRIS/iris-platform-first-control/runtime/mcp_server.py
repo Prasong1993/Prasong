@@ -4,10 +4,11 @@ import json, os
 from pathlib import Path
 from typing import Any
 from mcp.server import MCPServer
-from runtime.control_plane import ControlPlane, ControlPlaneError
+from runtime.control_plane import ControlPlaneError
+from runtime.verified_control_plane import VerifiedControlPlane
 
 DB_PATH = os.environ.get("IRIS_DB_PATH", str(Path(__file__).resolve().parents[1] / "data" / "iris.sqlite3"))
-control = ControlPlane(DB_PATH)
+control = VerifiedControlPlane(DB_PATH)
 mcp = MCPServer("IRIS Platform-First Control")
 
 def safe(fn):
@@ -39,13 +40,14 @@ def get_task(task_id: str) -> dict[str, Any]:
     return safe(lambda: control.get_task(task_id))
 
 @mcp.tool()
-def add_evidence(task_id: str, source_url: str, retrieved_at: str, content: str, status: str, claim: str) -> dict[str, Any]:
-    """Record source metadata and a digest; raw content is not persisted."""
-    return safe(lambda: control.add_evidence(task_id, source_url=source_url, retrieved_at=retrieved_at, content=content, status=status, claim=claim))
+def add_evidence(task_id: str, source_url: str, retrieved_at: str, content: str, claim: str) -> dict[str, Any]:
+    """Record incoming evidence as UNKNOWN; only a trusted server-side verifier may mark it VERIFIED."""
+    return safe(lambda: control.add_evidence(task_id, source_url=source_url, retrieved_at=retrieved_at,
+                                             content=content, status="UNKNOWN", claim=claim))
 
 @mcp.tool()
 def set_plan(task_id: str, plan_json: str) -> dict[str, Any]:
-    """Set a JSON-array plan; VERIFIED evidence is required."""
+    """Set a JSON-array plan; trusted VERIFIED evidence is required."""
     def run():
         try:
             plan = json.loads(plan_json)
@@ -62,12 +64,14 @@ def approve_task(task_id: str, actor: str, approved: bool) -> dict[str, Any]:
 @mcp.tool()
 def authorize_execution(task_id: str, adapter_name: str, permission_granted: bool, idempotency_key: str) -> dict[str, Any]:
     """Authorize a host adapter after gates; never invokes that adapter."""
-    return safe(lambda: control.authorize_execution(task_id, adapter_name=adapter_name, permission_granted=permission_granted, idempotency_key=idempotency_key))
+    return safe(lambda: control.authorize_execution(task_id, adapter_name=adapter_name,
+        permission_granted=permission_granted, idempotency_key=idempotency_key))
 
 @mcp.tool()
 def record_execution_result(task_id: str, adapter_name: str, outcome: str, evidence_ref: str = "") -> dict[str, Any]:
     """Record a real adapter result; UNKNOWN_OUTCOME blocks further execution."""
-    return safe(lambda: control.record_execution_result(task_id, adapter_name=adapter_name, outcome=outcome, evidence_ref=evidence_ref or None))
+    return safe(lambda: control.record_execution_result(task_id, adapter_name=adapter_name,
+        outcome=outcome, evidence_ref=evidence_ref or None))
 
 @mcp.tool()
 def verify_task(task_id: str, passed: bool, verification_ref: str) -> dict[str, Any]:

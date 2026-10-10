@@ -58,3 +58,10 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   - reduce/split only where structurally safe, never discard required content or bypass controls;
   - read back after successful writes and record unresolved warnings as BLOCKED.
 - Next verification: fetch PROJECT_CHARTER.md from the exact branch, confirm the protocol text is present, then compare the branch to the source branch.
+
+## Entry EX-0004 — 2026-10-11
+- Status: VERIFIED.
+- Read-back: fetched PROJECT_CHARTER.md from work/iris-control-renovation-20261011-copy and confirmed the complete write-safety and warning-recovery protocol is present. Returned content blob SHA: f3c808c2bd3921e566e8ea88b6666bf115db7d94.
+- Branch comparison: GitHub compare reports work/iris-control-renovation-20261011-copy ahead_by=6, behind_by=0 relative to work/iris-control-renovation-20261011. The reported changed-file set contains only PROJECT_CHARTER.md, EVIDENCE_REGISTER.md, and EXECUTION_LEDGER.md.
+- Warnings during these writes: no GitHub write warning/error was returned. One earlier documentation scrape attempt failed due to a missing required parameter; this was a read/research failure, not a write warning, and is recorded in EX-0002.
+- Limits: this verifies persisted documentation and branch comparison only; no application runtime or tests were run.

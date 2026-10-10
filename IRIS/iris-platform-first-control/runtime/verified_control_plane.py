@@ -5,7 +5,7 @@ MCP-facing adapter must never expose that method directly to the model/client.
 """
 from __future__ import annotations
 from typing import Any
-from runtime.control_plane import ControlPlane, ControlPlaneError, now
+from runtime.control_plane import ControlPlane, ControlPlaneError
 
 class VerifiedControlPlane(ControlPlane):
     def add_evidence(self, task_id: str, *, source_url: str, retrieved_at: str,
@@ -49,3 +49,12 @@ class VerifiedControlPlane(ControlPlane):
         if mismatch:
             raise ControlPlaneError("EVIDENCE_DIGEST_MISMATCH")
         return result
+
+    def record_verification_failure(self, task_id: str, *, source_host: str, reason: str) -> None:
+        """Record a rejected source attempt without persisting a potentially sensitive full URL."""
+        with self._tx() as c:
+            task = c.execute("SELECT project_id FROM tasks WHERE task_id=?", (task_id,)).fetchone()
+            if not task:
+                raise ControlPlaneError("TASK_NOT_FOUND")
+            self._audit(c, task["project_id"], task_id, "SOURCE_VERIFICATION_FAILED", "BLOCKED",
+                        {"source_host": source_host or "[INVALID]", "reason": reason})

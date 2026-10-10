@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "iris-controller": {
+      "command": "python",
+      "args": ["runtime/launch_mcp.py"],
+      "env": {
+        "IRIS_DB_PATH": "${PLUGIN_DATA}/iris-controller/data/iris.db"
+      }
+    }
+  }
+}

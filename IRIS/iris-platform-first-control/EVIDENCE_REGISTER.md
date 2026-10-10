@@ -16,6 +16,7 @@ Rule: source discovery is not proof of account access or host behavior. Record t
 | E-009 | VERIFIED (relevant sections reviewed) | Function calling is a request/response loop: the application receives a tool call and executes the function; a model proposal alone is not execution or authorization. | https://developers.openai.com/api/docs/guides/function-calling | 2026-10-11 | Validate arguments, authorize each action server-side, enforce idempotency and deterministic policy gates, and record tool result evidence. |
 | E-010 | VERIFIED (relevant sections reviewed) | Remote MCP calls can require approval; OpenAI recommends reviewing/logging data shared with connectors and using trusted servers. | https://developers.openai.com/api/docs/guides/tools-connectors-mcp | 2026-10-11 | Define least privilege, approval levels, secret handling, timeouts, retry policy, and audit redaction. |
 | E-011 | VERIFIED (relevant sections reviewed) | API keys must not be exposed in client code or public repositories; official production guidance recommends secure secret storage and key rotation. | https://developers.openai.com/api/docs/guides/production-best-practices | 2026-10-11 | Select hosting/secret management and verify no secrets enter logs, Git, or client bundles. |
+| E-012 | VERIFIED (official SDK source + package metadata reviewed) | The official MCP Python SDK supports server tools and stdio, Streamable HTTP, and SSE transports; the PyPI project page reported release 2.3.0 on 2026-10-02. | https://github.com/modelcontextprotocol/python-sdk/blob/main/README.md ; https://github.com/modelcontextprotocol/python-sdk/blob/main/docs_src/index/tutorial001.py ; https://py.sdk.modelcontextprotocol.io/get-started/ ; https://pypi.org/project/mcp/ | 2026-10-11 | Verify installability and adapter import in the deployment environment; a source example or release listing is not proof the IRIS adapter starts or connects. |
 
 ## Design implications (evidence-linked)
 1. Keep ChatGPT/OpenAI as the primary interface where the target account supports it; treat API integrations as separately hosted capabilities, not as automatic features of the mobile app. (E-001, E-003, E-006)
@@ -23,9 +24,10 @@ Rule: source discovery is not proof of account access or host behavior. Record t
 3. Treat tool proposals and registered capabilities as declarations only. Execute only through a real authorized adapter after server-side validation. (E-009, E-010)
 4. Keep secrets outside source control and execution records; store only the minimum evidence needed for audit and recovery. (E-008, E-011)
 5. Mobile-only support and account permissions remain UNKNOWN until tested on the actual target client/account. (E-003, E-006)
+6. Use the official MCP SDK only at its verified version range, and keep the remote write-capable server blocked until authentication is implemented and tested. (E-004, E-012)
 
 ## Evidence policy
-- Prefer current official OpenAI documentation for platform capabilities and constraints.
+- Prefer current official OpenAI and MCP documentation for platform capabilities and constraints.
 - Record the claim, source URL, retrieval date, affected decision, and linked acceptance test.
 - Distinguish source discovery, relevant-section review, static inspection, automated tests, live runtime verification, and target-host/mobile verification.
 - Recheck volatile platform, plan, and feature availability before release.

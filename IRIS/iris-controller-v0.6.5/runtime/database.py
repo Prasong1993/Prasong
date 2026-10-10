@@ -249,7 +249,7 @@ def runtime_status(work_id=None):
         "database": "ok",
         "db_path": str(get_db_path()),
         "updated_at": (last_update or {}).get("updated_at"),
-        "latest_event": one("SELECT * FROM work_events" + clauses + " ORDER BY recorded_at DESC LIMIT 1", args),
+        "latest_event": one("SELECT * FROM work_events" + clauses + " ORDER BY rowid DESC LIMIT 1", args),
         "active_tool_calls": many(
             "SELECT * FROM tool_calls WHERE status IN ('PENDING','RUNNING','UNKNOWN_OUTCOME')" +
             (" AND work_id=?" if work_id else "") + " ORDER BY created_at", args

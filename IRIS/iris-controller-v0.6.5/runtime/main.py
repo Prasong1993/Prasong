@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 try:
-    from .database import init_db, many, get_connection, runtime_status, record_event
+    from .database import init_db, many, get_connection, get_db_path, runtime_status, record_event
     from .controller import create_work, run_step, get_work, record_error, checkpoint
     from .model import STEP_DEFINITIONS, WORKING_STRUCTURE
 except ImportError:
@@ -56,7 +56,7 @@ def health():
         init_db()
         with get_connection() as conn:
             conn.execute('SELECT 1').fetchone()
-        return {'status':'ok','database':'ok','db_path':str(__import__('database').get_db_path()) if __package__ in (None, '') else None,'version':APP_VERSION}
+        return {'status':'ok','database':'ok','db_path':str(get_db_path()),'version':APP_VERSION}
     except Exception as exc:
         raise HTTPException(503, f'database unavailable: {exc}')
 

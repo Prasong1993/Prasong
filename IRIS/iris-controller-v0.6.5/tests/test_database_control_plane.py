@@ -15,21 +15,14 @@ def test_additive_schema_and_event_round_trip(tmp_path, monkeypatch):
     try:
         database.set_db_path(db_file)
         database.init_db()
-        database.init_db()  # Migration must be idempotent.
-
-        names = {row["name"] for row in database.many(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        )}
-        assert {"work_units", "evidence", "audit_log", "schema_migrations",
-                "projects", "tasks", "task_dependencies", "source_evidence",
-                "tool_registry", "tool_calls", "policies", "policy_decisions",
-                "work_events", "recovery_points", "verification_results",
+        database.init_db()
+        names = {row["name"] for row in database.many("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"work_units", "evidence", "audit_log", "schema_migrations", "projects", "tasks",
+                "task_dependencies", "source_evidence", "tool_registry", "tool_calls", "policies",
+                "policy_decisions", "work_events", "recovery_points", "verification_results",
                 "runtime_state", "record_revisions"} <= names
-
-        database.record_event(
-            "EVIDENCE_COLLECTED", work_id=None, status="VERIFIED",
-            payload={"source_url": "https://example.invalid/spec", "fact": "test fixture"}
-        )
+        database.record_event("EVIDENCE_COLLECTED", status="VERIFIED",
+                              payload={"source_url": "https://example.invalid/spec", "fact": "test fixture"})
         state = database.runtime_status()
         assert state["database"] == "ok"
         assert state["latest_event"]["event_type"] == "EVIDENCE_COLLECTED"

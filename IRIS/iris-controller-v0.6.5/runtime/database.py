@@ -238,21 +238,17 @@ def record_event(event_type, work_id=None, task_id=None, session_id=None,
             (identifier, event_type, work_id, task_id, session_id, trace_id,
              tool_call_id, status, json.dumps(payload or {}, ensure_ascii=False, sort_keys=True)),
         )
-        if work_id:
-            conn.execute(
-                "INSERT INTO audit_log(work_id,action,details) VALUES(?,?,?)",
-                (work_id, event_type, json.dumps(payload or {}, ensure_ascii=False, sort_keys=True)),
-            )
     return identifier
 
 
 def runtime_status(work_id=None):
     """Read live persisted state; empty values mean no event/record was found."""
     clauses, args = (" WHERE work_id=?", [work_id]) if work_id else ("", [])
+    last_update = one("SELECT MAX(recorded_at) AS updated_at FROM work_events" + clauses, args)
     return {
         "database": "ok",
         "db_path": str(get_db_path()),
-        "updated_at": one("SELECT MAX(recorded_at) AS updated_at FROM work_events" + clauses, args),
+        "updated_at": (last_update or {}).get("updated_at"),
         "latest_event": one("SELECT * FROM work_events" + clauses + " ORDER BY recorded_at DESC LIMIT 1", args),
         "active_tool_calls": many(
             "SELECT * FROM tool_calls WHERE status IN ('PENDING','RUNNING','UNKNOWN_OUTCOME')" +

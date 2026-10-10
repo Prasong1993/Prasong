@@ -7,7 +7,7 @@ try:
     from .controller import create_work, run_step, get_work, record_error, checkpoint
     from .model import STEP_DEFINITIONS, WORKING_STRUCTURE
 except ImportError:
-    from database import init_db, many, get_connection, runtime_status, record_event
+    from database import init_db, many, get_connection, get_db_path, runtime_status, record_event
     from controller import create_work, run_step, get_work, record_error, checkpoint
     from model import STEP_DEFINITIONS, WORKING_STRUCTURE
 

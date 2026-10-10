@@ -6,9 +6,11 @@ from typing import Any
 from mcp.server import MCPServer
 from runtime.control_plane import ControlPlaneError
 from runtime.verified_control_plane import VerifiedControlPlane
+from runtime.source_verifier import SourceVerifier
 
 DB_PATH = os.environ.get("IRIS_DB_PATH", str(Path(__file__).resolve().parents[1] / "data" / "iris.sqlite3"))
 control = VerifiedControlPlane(DB_PATH)
+source_verifier = SourceVerifier(control)
 mcp = MCPServer("IRIS Platform-First Control")
 
 def safe(fn):
@@ -40,10 +42,9 @@ def get_task(task_id: str) -> dict[str, Any]:
     return safe(lambda: control.get_task(task_id))
 
 @mcp.tool()
-def add_evidence(task_id: str, source_url: str, retrieved_at: str, content: str, claim: str) -> dict[str, Any]:
-    """Record incoming evidence as UNKNOWN; only a trusted server-side verifier may mark it VERIFIED."""
-    return safe(lambda: control.add_evidence(task_id, source_url=source_url, retrieved_at=retrieved_at,
-                                             content=content, status="UNKNOWN", claim=claim))
+def add_evidence(task_id: str, source_url: str, claim: str) -> dict[str, Any]:
+    """Fetch an allowlisted HTTPS source and record its digest; this verifies source retrieval, not claim truth."""
+    return safe(lambda: source_verifier.ingest(task_id, source_url=source_url, claim=claim))
 
 @mcp.tool()
 def set_plan(task_id: str, plan_json: str) -> dict[str, Any]:

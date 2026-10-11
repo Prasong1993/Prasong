@@ -148,3 +148,33 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   2. Implement/configure authenticated MCP transport and least-privilege access before any remote deployment.
   3. Test live source retrieval in the authorized environment, including redirect, DNS, timeout, content-type, and body-size cases.
   4. Verify target-account Apps SDK availability and mobile behavior before calling the project host-ready.
+
+
+## Entry EX-0011 — 2026-10-11
+- Status: VERIFIED for fresh official SDK documentation review and current GitHub state; NOT RUN for SDK installation, adapter import, protocol tests, host connection, and mobile tests.
+- Fresh official MCP Python SDK documentation reviewed:
+  - First steps: https://py.sdk.modelcontextprotocol.io/get-started/first-steps/
+  - v1-to-v2 migration: https://py.sdk.modelcontextprotocol.io/migration/
+  - Server runtime docs: https://py.sdk.modelcontextprotocol.io/run/
+- Verified documentation findings:
+  - Current docs use `from mcp.server import MCPServer`, matching the import path in runtime/mcp_server.py.
+  - The official docs demonstrate `uv run mcp dev server.py` for local inspection and `uv run mcp run server.py --transport streamable-http` for running an HTTP transport.
+  - These documented commands establish the supported SDK workflow, not that this project's adapter passes import, schema, protocol, authentication, or host tests.
+- Current code inspection:
+  - runtime/mcp_server.py registers tools but does not itself establish authenticated remote transport. The README's local development inspection command is not a production deployment path.
+  - The source verifier's public-DNS preflight is not DNS pinning; deployment remains blocked until connection-time destination controls/network egress policy are reviewed and tested.
+  - Requirements matrix still reports semantic claim verification, actual external tool invocation, full transition matrix, timeout/storage failure tests, MCP protocol tests, and ChatGPT mobile behavior as partial/NOT RUN.
+- Plugin Creator inspection:
+  - Listed the three existing private personal plugins: chatgpt-control-api v0.2.3, iris-step1 v0.1.0, and iris-controller v0.6.19.
+  - Read the file inventory for chatgpt-control-api and iris-controller. No plugin was changed or created because the new project charter requires an isolated implementation and the request did not designate an existing plugin as the target; avoiding an unrequested plugin edit prevents accidental coupling/duplication.
+- GitHub state rechecked:
+  - Repository default branch is main; working branch is accessible.
+  - Compared with work/iris-control-renovation-20261011: ahead_by=41, behind_by=0; project paths only.
+  - Compared with main: ahead_by=67, behind_by=0; includes inherited older IRIS v0.6.5 changes and the new project. Do not interpret this as a project-only diff.
+- No runtime code was changed in this entry because the available execution environment still cannot install/test the MCP SDK and a safe authenticated hosting target has not been established. No claim of adapter or ChatGPT connectivity is made.
+- Next actions:
+  1. In a network-enabled isolated environment, install the selected SDK and run adapter import, schema, and protocol tests.
+  2. Add/execute integration tests against the official SDK test client or Inspector; capture actual output.
+  3. Implement and test authenticated transport before remote exposure.
+  4. Resolve DNS pinning/egress controls and then test live retrieval.
+  5. Test ChatGPT Apps SDK entitlement and target Android client separately.

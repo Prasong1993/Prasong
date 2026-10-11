@@ -29,12 +29,14 @@ Working branch: work/iris-control-renovation-20261011-copy
 | R-13 | ChatGPT Mobile behavior is verified separately. | Test discovery, connection, read, write approval, and failures on the actual mobile client/account. | Dated client/version record. | NOT RUN; mobile-only capability UNKNOWN. |
 | R-14 | Branch changes are isolated and reviewable. | Compare working branch with source branch and main separately. | GitHub compare and file list. | PASS relative to source branch: project-local paths only; main comparison includes older/inherited IRIS changes. |
 | R-15 | Delivery claims match evidence. | Map every requirement to PASS/PARTIAL/UNKNOWN/BLOCKED/NOT RUN. | Final acceptance report. | NOT RUN; final acceptance review remains open. |
+| R-16 | AI actions are recorded for reliable continuation. | Verify each IRIS MCP tool call writes a STARTED event before execution and a terminal event after it; failures are recorded; secret-shaped values are redacted; unfinished actions survive restart; resume returns task/checkpoint/audit/action history. | SQLite action journal, unit tests, actual MCP protocol call/read-back, and a CI run for the exact commit. | IMPLEMENTED IN WORKING BRANCH; latest action-journal changes await CI result/read-back. Not a record of hidden model reasoning or actions outside this adapter. |
 
 ## Local test evidence
-- Commands: `python -m py_compile runtime/control_plane.py runtime/verified_control_plane.py runtime/source_verifier.py runtime/mcp_server.py` and `python -m unittest discover -v`.
-- Latest development-worktree result: **17 tests passed, 0 failed**.
+- GitHub Actions command on Python 3.12.15: `python -m py_compile runtime/*.py tests/*.py` and `python -m unittest discover -v`.
+- Verified CI baseline before the AI action-journal change: MCP SDK **2.3.0** installed; compile passed; **18 tests passed, 0 failed**, including real MCP stdio discovery and calls. Run: https://github.com/Prasong1993/Prasong/actions/runs/38102751491
+- The action-journal implementation adds two tests; the exact post-change commit must complete CI before those changes can be called PASS.
 - Coverage: health/IDs, UNKNOWN evidence gate, client self-assertion rejection, verifier digest mismatch audit, execution authorization without invocation, permission denial/audit, idempotency/reuse mismatch, restart persistence, checkpoint recovery with approval reset, final verification reference, UNKNOWN_OUTCOME blocking, secret redaction, allowlisted source retrieval/digest, disallowed host, query rejection, non-200/redirect rejection, and oversized body rejection.
-- Limitation: the MCP SDK is not installed in the local environment. MCP adapter import, protocol/transport behavior, ChatGPT host integration, and mobile behavior are NOT RUN. Tests use an injected fake fetcher and do not claim live external retrieval was tested.
+- Limitation: the SDK/protocol baseline passed in GitHub Actions, but this does not test authenticated Streamable HTTP, live external source retrieval, DNS pinning, ChatGPT host integration, or Android behavior. Source-verifier unit tests use an injected fake fetcher; live external retrieval remains NOT RUN.
 
 ## Verification levels
 1. Static: schemas, state machine, permissions, dependencies.

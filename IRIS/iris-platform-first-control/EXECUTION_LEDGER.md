@@ -178,3 +178,16 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
   3. Implement and test authenticated transport before remote exposure.
   4. Resolve DNS pinning/egress controls and then test live retrieval.
   5. Test ChatGPT Apps SDK entitlement and target Android client separately.
+
+## Entry EX-0012 — 2026-10-11 — AI action journal and resumable execution requirement
+- Trigger: user clarified that IRIS is the control plane and ChatGPT is the AI agent being controlled; the agent must not depend on conversational recall to discover what it did or what failed after returning to the project.
+- Requirement added: record observable AI tool actions automatically, including start/end, action/session/trace IDs, task association, tool name, redacted inputs/outputs, outcome, safe error metadata, and unresolved actions. Provide a resume-context read that surfaces task state, checkpoint metadata, audit events, and action history.
+- Code changes committed on the working branch:
+  - runtime/control_plane.py: added append-only `agent_action_events` storage, start/finish APIs, action-history query, and resume-context query. STARTED and FINISHED are separate events; a crashed/interrupted action remains visible rather than being overwritten as success.
+  - runtime/mcp_server.py: the safe wrapper records observable MCP tool calls before execution and appends the terminal result/error afterward; if the pre-action journal cannot be persisted, the operation is not executed. If final journaling fails, the response is UNKNOWN_OUTCOME and instructs inspection before retry. Added `get_agent_actions` and `get_resume_context` tools.
+  - tests/test_control_plane.py: added tests for start/finish records, secret redaction, rejection of a second terminal record, restart persistence of unfinished actions, and resume-context readback.
+  - PROJECT_CHARTER.md, ARCHITECTURE_DECISION.md, REQUIREMENTS_AND_TEST_MATRIX.md, README.md: documented the requirement, boundary, limitations, and acceptance tests.
+- Important identity limits: the current MCP process session ID is not a verified ChatGPT conversation/session ID, and the caller is marked `mcp-caller-unverified` until authenticated transport exists. The journal records tool actions routed through this adapter only; it does not capture hidden model reasoning or ChatGPT activity outside the adapter.
+- Historical baseline evidence: GitHub Actions run https://github.com/Prasong1993/Prasong/actions/runs/38102751491 passed on commit `21f73554d9c7c2034a145d1d6d4dc55c7a8fb8a8` with Python 3.12.15, MCP SDK 2.3.0, compile pass, and 18 tests passed. This run predates the action-journal implementation and does not validate the new code.
+- Current status: implementation and documentation written to the specified working branch; post-change CI and read-back are pending. Do not mark R-16 PASS until the exact post-change commit completes CI and its action-journal tests pass.
+- Security/observability caveats still open: caller authentication, OAuth-protected remote transport, live DNS pinning/SSRF enforcement, live source fetch, actual ChatGPT account connection, and Android E2E remain unverified. Do not expose the server publicly.

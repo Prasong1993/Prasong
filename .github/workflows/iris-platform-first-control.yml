@@ -1,0 +1,41 @@
+name: IRIS Platform-First Control CI
+
+on:
+  push:
+    branches:
+      - work/iris-control-renovation-20261011-copy
+    paths:
+      - 'IRIS/iris-platform-first-control/**'
+      - '.github/workflows/iris-platform-first-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: IRIS/iris-platform-first-control
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: IRIS/iris-platform-first-control/runtime/requirements.txt
+      - name: Install declared MCP SDK and CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r runtime/requirements.txt
+      - name: Record actual runtime and SDK versions
+        run: |
+          python --version
+          python -m pip show mcp
+      - name: Compile project Python files
+        run: python -m py_compile runtime/*.py tests/*.py
+      - name: Run unit, failure-path, and MCP stdio protocol tests
+        run: python -m unittest discover -v

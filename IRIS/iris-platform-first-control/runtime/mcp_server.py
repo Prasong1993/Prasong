@@ -103,7 +103,8 @@ def safe(fn):
                 "message":"An internal control-plane error occurred.",
                 "action_id":started["action_id"],"trace_id":trace_id}
     try:
-        control.finish_agent_action(started["action_id"], status="SUCCEEDED",\n            outputs=_journal_result_projection(action_name, result))
+        control.finish_agent_action(started["action_id"], status="SUCCEEDED",
+            outputs=_journal_result_projection(action_name, result))
     except Exception:
         return {"status":"UNKNOWN_OUTCOME","error_type":"ACTION_JOURNAL_FINISH_FAILED",
                 "trace_id":trace_id,"message":"The operation may have completed but its final journal event could not be persisted; inspect state before retrying."}

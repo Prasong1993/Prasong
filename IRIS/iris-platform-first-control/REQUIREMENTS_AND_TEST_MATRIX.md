@@ -67,3 +67,10 @@ Working branch: work/iris-control-renovation-20261011-copy
 - Official documented development commands include `uv run mcp dev runtime/mcp_server.py` and `uv run mcp run runtime/mcp_server.py --transport streamable-http`; these are not production-readiness evidence.
 - Adapter import/protocol behavior remains NOT RUN because the SDK has not been installed in the available runtime. The Streamable HTTP command must not be exposed publicly before authentication, TLS, least privilege, and deployment controls are implemented and tested.
 - Current acceptance gaps remain: live network/DNS pinning tests, semantic claim verification, full transition/failure matrix, authenticated remote transport, target-account Apps SDK, and Android mobile integration.
+
+## ChatGPT-first workspace rule
+- The active ChatGPT conversation and tools available through this session are the primary work surface. Keep decisions, progress, action/recovery notes, and delivery here.
+- Do not create or require a separate runtime or test workspace merely to increase complexity. GitHub is versioned project storage, not proof that ChatGPT itself is executing the project.
+- PASS requires an observed result in the applicable current execution context. Code inspection, old CI, mocks, or a successful file write do not prove current runtime success.
+- If this session cannot run Python tests, a live MCP handshake, target-account app connection, or Android E2E, mark that check NOT RUN/BLOCKED. Do not silently substitute another environment.
+- On continuation, inspect the ledger/action records first and record action, tool/target, result/error, changed artifact, read-back, status, and next safe action. Unresolved actions must be reconciled before retrying.

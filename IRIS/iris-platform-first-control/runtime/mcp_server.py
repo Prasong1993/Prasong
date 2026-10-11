@@ -15,6 +15,46 @@ MCP_SESSION_ID = str(uuid.uuid4())  # process session, not a verified ChatGPT co
 MCP_ACTOR_ID = "mcp-caller-unverified"  # caller identity is not authenticated by this local stdio adapter
 mcp = MCPServer("IRIS Platform-First Control")
 
+def _journal_projection(value: Any, *, depth: int = 0) -> Any:
+    """Bound journal payloads; retain useful metadata, not arbitrary result bodies."""
+    if depth >= 4:
+        return "[TRUNCATED_DEPTH]"
+    if isinstance(value, dict):
+        items = list(value.items())[:30]
+        projected = {str(k): _journal_projection(v, depth=depth + 1) for k, v in items}
+        if len(value) > len(items):
+            projected["_truncated_keys"] = len(value) - len(items)
+        return projected
+    if isinstance(value, (list, tuple)):
+        return {
+            "_kind": "list",
+            "item_count": len(value),
+            "sample": [_journal_projection(v, depth=depth + 1) for v in value[:10]],
+            "truncated": len(value) > 10,
+        }
+    if isinstance(value, str):
+        return value[:500] + ("...[TRUNCATED]" if len(value) > 500 else "")
+    if isinstance(value, (int, float, bool)) or value is None:
+        return value
+    return f"<{type(value).__name__}>"
+
+def _journal_result_projection(action_name: str, result: Any) -> Any:
+    # History-reading tools must not journal their entire history back into itself.
+    if action_name == "get_agent_actions" and isinstance(result, list):
+        return {"kind": "action_history", "item_count": len(result),
+                "action_ids": [x.get("action_id") for x in result[:20] if isinstance(x, dict)]}
+    if action_name == "get_resume_context" and isinstance(result, dict):
+        actions = result.get("recent_agent_actions", [])
+        return {"kind": "resume_context", "task_id": (result.get("task") or {}).get("task_id")
+                if isinstance(result.get("task"), dict) else None,
+                "action_count": len(actions) if isinstance(actions, list) else None,
+                "checkpoint_present": bool(result.get("latest_checkpoint")),
+                "audit_event_count": len(result.get("audit_events", []))
+                if isinstance(result.get("audit_events"), list) else None}
+    if action_name in {"get_audit", "get_evidence"} and isinstance(result, list):
+        return {"kind": action_name, "item_count": len(result)}
+    return _journal_projection(result)
+
 def safe(fn):
     """Journal each observable MCP tool invocation before and after execution."""
     frame = inspect.currentframe()
@@ -34,7 +74,7 @@ def safe(fn):
         started = control.start_agent_action(
             session_id=MCP_SESSION_ID, trace_id=trace_id,
             actor_id=MCP_ACTOR_ID, action_name=action_name,
-            task_id=task_id, inputs=local_values)
+            task_id=task_id, inputs=_journal_projection(local_values))
     except Exception:
         return {"status":"BLOCKED","error_type":"ACTION_JOURNAL_UNAVAILABLE",
                 "message":"The action was not executed because its start record could not be persisted.",
@@ -63,7 +103,7 @@ def safe(fn):
                 "message":"An internal control-plane error occurred.",
                 "action_id":started["action_id"],"trace_id":trace_id}
     try:
-        control.finish_agent_action(started["action_id"], status="SUCCEEDED", outputs=result)
+        control.finish_agent_action(started["action_id"], status="SUCCEEDED",\n            outputs=_journal_result_projection(action_name, result))
     except Exception:
         return {"status":"UNKNOWN_OUTCOME","error_type":"ACTION_JOURNAL_FINISH_FAILED",
                 "trace_id":trace_id,"message":"The operation may have completed but its final journal event could not be persisted; inspect state before retrying."}

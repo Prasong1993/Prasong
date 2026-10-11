@@ -10,23 +10,16 @@ A new, isolated control-plane implementation. ChatGPT/OpenAI remains the preferr
 - ChatGPT Apps SDK/account/mobile connection: **NOT RUN**.
 - Public deployment: **BLOCKED** until authenticated transport, least-privilege permissions, and hosting are configured and tested.
 
-## Local tests
+## Primary operating surface
 
-From the project root:
+The intended operator workspace is the active ChatGPT conversation and the tools actually available through that session. Keep decisions, progress, action records, recovery, and delivery here. GitHub is versioned storage for the project when required; it is not the runtime where ChatGPT itself is assumed to execute.
 
-```bash
-python -m unittest discover -v
-```
+Do not require a separate shell, virtual environment, external server, deployment, or second test workspace merely to make routine work more complicated. Run only checks that can actually be performed through the current ChatGPT session and available tools. If the current session cannot run a Python test suite or a live MCP protocol handshake, report that specific test as NOT RUN; do not infer PASS from reading code, a mock, or an old CI run.
 
-## MCP development
+## Test and MCP boundary
 
-The official PyPI package page reported MCP Python SDK 2.3.0, released 2026-10-02, during project research. Install the declared dependency and use the official SDK CLI:
+The source files include a Python unit-test suite and an MCP adapter, but their presence is not a claim that they were executed in the current ChatGPT session. Historical CI results are historical evidence only and do not validate subsequent commits. Do not expose write-capable MCP tools publicly without a supported authentication flow, TLS, least-privilege permissions, approval policy, and secret management.
 
-```bash
-uv run --with "mcp[cli]>=2.3.0,<3.0.0" mcp dev runtime/mcp_server.py
-```
-
-This is a development/inspection path, not proof of ChatGPT connectivity. Do not expose write-capable MCP tools publicly until transport authentication, TLS, least-privilege permissions, approval policy, and secret management are configured and tested.
 
 ## AI action journal and resuming work
 

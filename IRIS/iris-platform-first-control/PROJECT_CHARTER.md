@@ -17,7 +17,7 @@ Build the next isolated IRIS Control iteration on the ChatGPT/OpenAI platform as
 1. ChatGPT is the primary interface and reasoning/work surface; IRIS is the small control plane, not a competing model or duplicate agent platform.
 2. Reuse OpenAI/ChatGPT capabilities where they are available and supported; don't assume API capabilities automatically exist in the ChatGPT mobile app.
 3. Minimize custom code. Build thin adapters, project state/evidence storage, policy gates, checkpoints, routing, and verification only where needed.
-4. Capture each real execution automatically where the available runtime permits: task, timestamp, branch/revision, inputs/outputs references, tools/actions, decision/gate results, errors, retries, and verification evidence. Never log secrets or unnecessary personal data.
+4. Capture each observable execution automatically where the available runtime permits: task, timestamp, branch/revision, inputs/outputs references, tools/actions, decision/gate results, errors, retries, and verification evidence. Never log secrets or unnecessary personal data. The AI must be able to inspect this record when resuming work instead of relying on conversational recall.
 5. Separate VERIFIED, RECOVERED, UNKNOWN, BLOCKED, and NOT RUN. An UNKNOWN claim is not proof; static inspection is not runtime verification.
 6. Errors and improvement proposals should be accumulated in the project record and summarized at the agreed review point (currently milestone 10), except urgent safety/security blockers that must be raised immediately.
 7. No claim of “100% working” without a defined acceptance matrix and passing tests; report coverage and remaining limits explicitly.
@@ -45,6 +45,9 @@ G7 Final report states verified results, not-run tests, unknowns, and next steps
 ## Acceptance criteria
 - Project/task state is durable and traceable across sessions/restarts.
 - Each meaningful action has a correlation/trace identifier and audit record.
+- Each IRIS-routed AI tool action is journaled before execution and finalized after execution; interrupted actions remain visible as IN_PROGRESS/unknown until reconciled.
+- A resume operation can recover task state, latest checkpoint, audit events, and recorded actions without inventing missing history.
+- The journal records observable tool actions and outcomes, not hidden model reasoning or actions outside the IRIS adapter.
 - Invalid transitions and policy violations are rejected deterministically before execution.
 - Retries do not duplicate completed side effects where idempotency can be enforced.
 - Tool permissions, timeouts, budget/rate limits, and failure handling are explicit.

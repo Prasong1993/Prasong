@@ -257,10 +257,16 @@ class ControlPlane:
                 raise ControlPlaneError("AGENT_ACTION_ALREADY_FINISHED")
             payload = {"outputs": redact(outputs or {}), "error_type": error_type,
                        "error_message": redact(error_message) if error_message else None}
+            output_task_id = outputs.get("task_id") if isinstance(outputs, dict) else None
+            output_project_id = outputs.get("project_id") if isinstance(outputs, dict) else None
+            if isinstance(outputs, dict) and isinstance(outputs.get("task"), dict):
+                output_task_id = output_task_id or outputs["task"].get("task_id")
+                output_project_id = output_project_id or outputs["task"].get("project_id")
             c.execute(
                 "INSERT INTO agent_action_events(action_id,session_id,trace_id,project_id,task_id,actor_id,action_name,occurred_at,phase,status,payload_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (action_id, started["session_id"], started["trace_id"], started["project_id"],
-                 started["task_id"], started["actor_id"], started["action_name"], now(),
+                (action_id, started["session_id"], started["trace_id"],
+                 started["project_id"] or output_project_id, started["task_id"] or output_task_id,
+                 started["actor_id"], started["action_name"], now(),
                  "FINISHED", status, js(payload)))
         return {"action_id": action_id, "status": status}
 
@@ -271,7 +277,7 @@ class ControlPlane:
             raise ControlPlaneError("TASK_OR_SESSION_REQUIRED")
         clauses, params = [], []
         if task_id:
-            clauses.append("task_id=?")
+            clauses.append("action_id IN (SELECT action_id FROM agent_action_events WHERE task_id=?)")
             params.append(task_id)
         if session_id:
             clauses.append("session_id=?")

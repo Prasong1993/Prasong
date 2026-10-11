@@ -1,8 +1,6 @@
 """Real MCP stdio integration test using the official SDK client and CLI."""
 import asyncio
 import json
-import os
-import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,15 +10,17 @@ from mcp import Client, StdioServerParameters
 
 class MCPStdioProtocolTests(unittest.TestCase):
     def test_server_discovers_tools_and_executes_health_and_project_tools(self):
-        if shutil.which("mcp") is None:
-            self.skipTest("MCP CLI is not installed; install runtime/requirements.txt first")
-
         async def exercise():
             with tempfile.TemporaryDirectory(prefix="iris-mcp-test-") as temp_dir:
                 server = StdioServerParameters(
                     command="mcp",
                     args=["run", "runtime/mcp_server.py"],
-                    env={"IRIS_DB_PATH": str(Path(temp_dir) / "iris.sqlite3")},
+                    env={
+                        "IRIS_DB_PATH": str(Path(temp_dir) / "iris.sqlite3"),
+                        # The SDK CLI loads the server module by path; explicitly
+                        # preserve the project root so runtime imports resolve.
+                        "PYTHONPATH": str(Path.cwd()),
+                    },
                 )
                 async with Client(server, raise_exceptions=True) as client:
                     discovered = await asyncio.wait_for(client.list_tools(), timeout=10)

@@ -127,5 +127,35 @@ class ControlPlaneTests(unittest.TestCase):
         self.assertNotIn("sk-abcdefghijklmnopqr", audit)
         self.assertIn("REDACTED", audit)
 
+
+    def test_agent_action_journal_records_start_finish_redacts_and_rejects_rewrite(self):
+        started = self.cp.start_agent_action(session_id="session-test", trace_id="trace-test",
+            actor_id="mcp-caller-unverified", action_name="create_task", task_id=self.tid,
+            inputs={"api_key":"sk-abcdefghijklmnopqr", "title":"safe task"})
+        self.cp.finish_agent_action(started["action_id"], status="SUCCEEDED",
+            outputs={"result":"created", "access_token":"top-secret"})
+        events = self.cp.get_agent_actions(task_id=self.tid)
+        matching = [event for event in events if event["action_id"] == started["action_id"]]
+        self.assertEqual([event["phase"] for event in matching], ["STARTED", "FINISHED"])
+        self.assertIn("REDACTED", str(matching))
+        self.assertNotIn("sk-abcdefghijklmnopqr", str(matching))
+        self.assertNotIn("top-secret", str(matching))
+        with self.assertRaisesRegex(ControlPlaneError, "AGENT_ACTION_ALREADY_FINISHED"):
+            self.cp.finish_agent_action(started["action_id"], status="FAILED")
+
+    def test_incomplete_action_survives_restart_and_resume_context_exposes_it(self):
+        started = self.cp.start_agent_action(session_id="session-crash", trace_id="trace-crash",
+            actor_id="mcp-caller-unverified", action_name="external_action", task_id=self.tid,
+            inputs={"target":"authorized-test-fixture"})
+        self.cp = VerifiedControlPlane(self.db)
+        actions = self.cp.get_agent_actions(task_id=self.tid)
+        event = next(event for event in actions if event["action_id"] == started["action_id"])
+        self.assertEqual(event["phase"], "STARTED")
+        self.assertEqual(event["status"], "IN_PROGRESS")
+        context = self.cp.get_resume_context(self.tid)
+        self.assertEqual(context["task"]["task_id"], self.tid)
+        self.assertTrue(any(a["action_id"] == started["action_id"] for a in context["recent_agent_actions"]))
+        self.assertIn("does not capture hidden model reasoning", " ".join(context["limitations"]))
+
 if __name__ == "__main__":
     unittest.main()

@@ -57,3 +57,11 @@ Working branch: work/iris-control-renovation-20261011-copy
 - The remote write-capable server remains BLOCKED until authentication, TLS, least privilege, approval policy, trusted evidence verification, and secrets management are configured and tested.
 - The source verifier currently uses an exact hostname allowlist, HTTPS-only URLs, no query parameters/redirects, pre-fetch public-address checks, timeouts, and body-size limits. Review DNS pinning and deployment network policy before production.
 - Mobile/account support remains UNKNOWN until tested in the intended account/client.
+
+
+## Fresh SDK review — 2026-10-11
+- Official SDK first-steps and migration documentation reviewed: https://py.sdk.modelcontextprotocol.io/get-started/first-steps/ and https://py.sdk.modelcontextprotocol.io/migration/
+- The documented import `from mcp.server import MCPServer` matches runtime/mcp_server.py.
+- Official documented development commands include `uv run mcp dev runtime/mcp_server.py` and `uv run mcp run runtime/mcp_server.py --transport streamable-http`; these are not production-readiness evidence.
+- Adapter import/protocol behavior remains NOT RUN because the SDK has not been installed in the available runtime. The Streamable HTTP command must not be exposed publicly before authentication, TLS, least privilege, and deployment controls are implemented and tested.
+- Current acceptance gaps remain: live network/DNS pinning tests, semantic claim verification, full transition/failure matrix, authenticated remote transport, target-account Apps SDK, and Android mobile integration.

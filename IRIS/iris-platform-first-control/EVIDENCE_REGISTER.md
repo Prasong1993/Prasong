@@ -1,6 +1,6 @@
 # Evidence Register
 Project: IRIS Platform-First Control
-Last checked: 2026-10-11
+Last checked: 2026-10-11 (fresh MCP SDK documentation review)
 Rule: source discovery is not proof of account access or host behavior. Record the exact claim and the level of inspection; test account-specific and mobile-specific behavior separately.
 
 | ID | Status | Claim supported | Official source | Retrieval date | Validation still required |
@@ -32,3 +32,5 @@ Rule: source discovery is not proof of account access or host behavior. Record t
 - Distinguish source discovery, relevant-section review, static inspection, automated tests, live runtime verification, and target-host/mobile verification.
 - Recheck volatile platform, plan, and feature availability before release.
 - Never treat search snippets, an SDK feature, or a successful source read as proof of working runtime behavior.
+
+| E-013 | VERIFIED (official documentation reviewed) | Current MCP Python SDK v2 documentation documents `MCPServer` as the server interface and the CLI paths `mcp dev` and `mcp run`; the docs describe SDK migration changes, but do not prove this repository's adapter imports or runs. | https://py.sdk.modelcontextprotocol.io/get-started/first-steps/ ; https://py.sdk.modelcontextprotocol.io/migration/ ; https://py.sdk.modelcontextprotocol.io/run/ | 2026-10-11 | Install the pinned/selected SDK in an authorized network-enabled environment, run import/protocol tests, and test actual host/mobile integration separately. |

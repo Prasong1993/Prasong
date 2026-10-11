@@ -218,3 +218,12 @@ Purpose: preserve a reviewable record of actual work. Append entries; do not rew
 - Tool error/recovery: the first combined-status query used the wrong argument names (`repository_full_name`/`ref` instead of the tool schema's `repo_full_name`/`commit_sha`) and was rejected by schema validation before execution. The available tool schema was re-read and the query repeated with correct arguments. The returned status list was empty; this is not evidence of a passing test run.
 - CI inspection: `.github/workflows/iris-platform-first-control.yml` is configured for pushes to this working branch and project paths, and runs Python compile, unit tests, and MCP stdio protocol tests. The available GitHub connector exposes no workflow-dispatch/list-runs operation suitable to prove a fresh run here; current post-change tests therefore remain NOT RUN/UNKNOWN.
 - No changes were made to `main`, no merge occurred, and no deployment was attempted.
+
+## Entry EX-0016 — 2026-10-11 — Focused tests for bounded journal projections
+- Status: VERIFIED for test-file creation and subsequent source read-back; NOT RUN for Python execution or CI result.
+- Review finding: the adapter implements bounded journal projection, but the existing tests did not directly assert the adapter-specific string, depth, dictionary, list, and history-summary limits.
+- Change: added `tests/test_journal_projection.py` with six focused unit tests covering string truncation, dictionary key bounds, list sampling, nesting depth, compact action-history projection, and compact resume-context projection.
+- Validation boundary: these tests import `runtime.mcp_server` and therefore require the declared MCP SDK dependencies. The current ChatGPT session has GitHub source tools but no usable Python execution environment or workflow-dispatch/list-runs action; do not claim the tests passed until a fresh CI run for the resulting commit is observed.
+- Tool recovery: initial source lookups guessed two test/workflow paths that returned HTTP 404. No source was changed by those reads. Directory listing identified the actual paths; the existing protocol and control-plane tests and workflow were then read successfully.
+- Next safe action: confirm the new test file and ledger are read back from the working branch, then inspect the latest commit's CI run if an available GitHub action exposes it. Keep runtime/host/mobile checks NOT RUN until actually executed.
+

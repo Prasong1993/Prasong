@@ -23,12 +23,13 @@ How should IRIS add project control, durable state, deterministic policy, checkp
 6. **Execution:** only explicit authorized adapters can perform side effects. Tool registry entries are metadata, not permissions. Each adapter declares permission, timeout, retry, idempotency, and audit behavior.
 7. **Observability:** use OpenAI/Agents tracing only if the chosen runtime actually uses the Agents SDK. IRIS keeps its own durable ledger because traces and application audit serve different purposes.
 8. **Client/API boundary:** API keys remain server-side. ChatGPT account auth, MCP OAuth, and OpenAI API authentication are separate identities and must not be conflated.
+9. **AI action journal and resume:** Every tool invocation that passes through the IRIS MCP adapter must append a STARTED event before execution and a terminal event afterward, with action/session/trace IDs, task link where available, tool name, redacted inputs/outputs, outcome, and safe error metadata. A STARTED event without a terminal event is evidence of interruption/unknown outcome, not success. Resume reads this journal with task state, audit, and checkpoint metadata. Do not store hidden chain-of-thought or credentials. A process session ID is not a verified ChatGPT conversation ID; caller identity remains unverified until authenticated transport exists.
 
 ## Threat and permission model
 - **Assets:** project state, source evidence, execution history, user data, provider credentials, external side effects.
 - **Trust boundaries:** user/ChatGPT host → MCP/API transport → IRIS policy layer → adapter → external system; database and logs are separate storage boundaries.
 - **Threats:** prompt-injection content in sources; forged/stale task IDs; unauthorized tool invocation; duplicate retries; secret leakage; audit tampering; partial persistence failures; unsupported host behavior.
-- **Controls:** validate schemas and ownership on every request; allowlist transitions; server-side authorization; explicit approval for risky writes; least-privilege adapter credentials; idempotency keys; bounded timeouts/retries; secret redaction; append-only events; database transactions; tested backup/recovery; no execution on missing/UNKNOWN evidence.
+- **Controls:** validate schemas and ownership on every request; allowlist transitions; server-side authorization; explicit approval for risky writes; least-privilege adapter credentials; idempotency keys; bounded timeouts/retries; secret redaction; append-only events; database transactions; tested backup/recovery; no execution on missing/UNKNOWN evidence; append-only AI action journal with pre-action persistence and resume inspection.
 - **Fail-closed rules:** reject invalid transitions, missing required evidence, denied permissions, expired approvals, stale revisions, or unavailable durable storage for actions that require auditability. Read-only evidence gathering may continue independently when safe.
 - **Error policy:** preserve the original failure and each recovery attempt; do not retry an uncertain non-idempotent action. Raise urgent security/privacy blockers immediately; aggregate ordinary errors for milestone 10 review.
 
@@ -47,3 +48,4 @@ How should IRIS add project control, durable state, deterministic policy, checkp
 - If Apps SDK/MCP cannot be enabled for the target account, record the exact blocker and compare supported alternatives before switching architecture.
 - If mobile support is not confirmed, report it as UNKNOWN and do not market the project as mobile-ready.
 - Reuse an existing private plugin only after a deliberate selection and compatibility review; do not create a duplicate plugin merely to test Plugin Creator.
+- The journal observes only IRIS MCP tool calls. It cannot by itself observe model-internal reasoning, non-IRIS ChatGPT tool calls, or platform activity that is not exposed to the adapter.

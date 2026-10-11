@@ -1,6 +1,6 @@
 """MCP adapter. Keep write-capable endpoints local until transport authentication is configured."""
 from __future__ import annotations
-import json, os
+import inspect, json, os, uuid
 from pathlib import Path
 from typing import Any
 from mcp.server import MCPServer
@@ -11,15 +11,67 @@ from runtime.source_verifier import SourceVerifier
 DB_PATH = os.environ.get("IRIS_DB_PATH", str(Path(__file__).resolve().parents[1] / "data" / "iris.sqlite3"))
 control = VerifiedControlPlane(DB_PATH)
 source_verifier = SourceVerifier(control)
+MCP_SESSION_ID = str(uuid.uuid4())  # process session, not a verified ChatGPT conversation ID
+MCP_ACTOR_ID = "mcp-caller-unverified"  # caller identity is not authenticated by this local stdio adapter
 mcp = MCPServer("IRIS Platform-First Control")
 
 def safe(fn):
+    """Journal each observable MCP tool invocation before and after execution."""
+    frame = inspect.currentframe()
+    caller = frame.f_back if frame else None
+    action_name = caller.f_code.co_name if caller else "unknown_tool"
+    local_values = {}
+    task_id = None
+    if caller:
+        task_id = caller.f_locals.get("task_id")
+        for key, value in caller.f_locals.items():
+            if key in {"fn", "run", "self"} or key.startswith("_"):
+                continue
+            if isinstance(value, (str, int, float, bool, type(None), list, dict)):
+                local_values[key] = value
+    trace_id = str(uuid.uuid4())
     try:
-        return fn()
-    except ControlPlaneError as exc:
-        return {"status":"ERROR","error_type":"CONTROL_PLANE_POLICY","message":str(exc)}
+        started = control.start_agent_action(
+            session_id=MCP_SESSION_ID, trace_id=trace_id,
+            actor_id=MCP_ACTOR_ID, action_name=action_name,
+            task_id=task_id, inputs=local_values)
     except Exception:
-        return {"status":"ERROR","error_type":"INTERNAL_ERROR","message":"An internal control-plane error occurred."}
+        return {"status":"BLOCKED","error_type":"ACTION_JOURNAL_UNAVAILABLE",
+                "message":"The action was not executed because its start record could not be persisted.",
+                "trace_id":trace_id}
+    try:
+        result = fn()
+    except ControlPlaneError as exc:
+        try:
+            control.finish_agent_action(started["action_id"], status="BLOCKED",
+                outputs={"status":"ERROR"}, error_type="CONTROL_PLANE_POLICY",
+                error_message=str(exc))
+        except Exception:
+            return {"status":"UNKNOWN_OUTCOME","error_type":"ACTION_JOURNAL_FINISH_FAILED",
+                    "trace_id":trace_id,"message":"The operation failed and its final journal event could not be persisted; inspect state before retrying."}
+        return {"status":"ERROR","error_type":"CONTROL_PLANE_POLICY","message":str(exc),
+                "action_id":started["action_id"],"trace_id":trace_id}
+    except Exception:
+        try:
+            control.finish_agent_action(started["action_id"], status="FAILED",
+                outputs={"status":"ERROR"}, error_type="INTERNAL_ERROR",
+                error_message="An internal control-plane error occurred.")
+        except Exception:
+            return {"status":"UNKNOWN_OUTCOME","error_type":"ACTION_JOURNAL_FINISH_FAILED",
+                    "trace_id":trace_id,"message":"The operation outcome may be unknown; inspect state before retrying."}
+        return {"status":"ERROR","error_type":"INTERNAL_ERROR",
+                "message":"An internal control-plane error occurred.",
+                "action_id":started["action_id"],"trace_id":trace_id}
+    try:
+        control.finish_agent_action(started["action_id"], status="SUCCEEDED", outputs=result)
+    except Exception:
+        return {"status":"UNKNOWN_OUTCOME","error_type":"ACTION_JOURNAL_FINISH_FAILED",
+                "trace_id":trace_id,"message":"The operation may have completed but its final journal event could not be persisted; inspect state before retrying."}
+    if isinstance(result, dict):
+        result = dict(result)
+        result.setdefault("action_id", started["action_id"])
+        result.setdefault("trace_id", trace_id)
+    return result
 
 @mcp.tool()
 def health() -> dict[str, Any]:
@@ -98,3 +150,14 @@ def get_evidence(task_id: str) -> list[dict[str, Any]]:
 def get_audit(task_id: str) -> list[dict[str, Any]]:
     """Read the append-only audit trail."""
     return safe(lambda: control.get_audit(task_id))
+
+@mcp.tool()
+def get_agent_actions(task_id: str = "", session_id: str = "", limit: int = 100) -> list[dict[str, Any]]:
+    """Read the append-only record of observable IRIS MCP tool actions by task or process session."""
+    return safe(lambda: control.get_agent_actions(
+        task_id=task_id or None, session_id=session_id or None, limit=limit))
+
+@mcp.tool()
+def get_resume_context(task_id: str) -> dict[str, Any]:
+    """Recover task state, latest checkpoint metadata, audit, and recorded MCP actions for continuation."""
+    return safe(lambda: control.get_resume_context(task_id))

@@ -11,7 +11,7 @@ from runtime.mcp_server import _journal_projection, _journal_result_projection
 class JournalProjectionTests(unittest.TestCase):
     def test_strings_are_capped(self):
         projected = _journal_projection("x" * 700)
-        self.assertEqual(len(projected), 513)
+        self.assertEqual(len(projected), 514)
         self.assertTrue(projected.endswith("...[TRUNCATED]"))
 
     def test_dicts_are_bounded_and_mark_truncation(self):

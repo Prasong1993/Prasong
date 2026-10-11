@@ -65,6 +65,9 @@ class ControlPlane:
             CREATE TABLE IF NOT EXISTS evidence(evidence_id TEXT PRIMARY KEY,task_id TEXT NOT NULL REFERENCES tasks(task_id),source_url TEXT NOT NULL,retrieved_at TEXT NOT NULL,content_sha256 TEXT NOT NULL,status TEXT NOT NULL,claim TEXT NOT NULL,created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS checkpoints(checkpoint_id TEXT PRIMARY KEY,task_id TEXT NOT NULL REFERENCES tasks(task_id),revision INTEGER NOT NULL,snapshot_json TEXT NOT NULL,created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS audit_events(event_id INTEGER PRIMARY KEY AUTOINCREMENT,project_id TEXT NOT NULL,task_id TEXT,occurred_at TEXT NOT NULL,event_type TEXT NOT NULL,status TEXT NOT NULL,payload_json TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS agent_action_events(event_id INTEGER PRIMARY KEY AUTOINCREMENT,action_id TEXT NOT NULL,session_id TEXT NOT NULL,trace_id TEXT NOT NULL,project_id TEXT,task_id TEXT,actor_id TEXT NOT NULL,action_name TEXT NOT NULL,occurred_at TEXT NOT NULL,phase TEXT NOT NULL,status TEXT NOT NULL,payload_json TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS idx_agent_action_task ON agent_action_events(task_id,event_id);
+            CREATE INDEX IF NOT EXISTS idx_agent_action_trace ON agent_action_events(trace_id,event_id);
             CREATE TABLE IF NOT EXISTS idempotency(idempotency_key TEXT PRIMARY KEY,operation TEXT NOT NULL,request_sha256 TEXT NOT NULL,result_json TEXT NOT NULL,created_at TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
             CREATE INDEX IF NOT EXISTS idx_evidence_task ON evidence(task_id);
@@ -216,6 +219,86 @@ class ControlPlane:
             c.execute("UPDATE tasks SET status=?,approved=0,plan_json=?,revision=?,updated_at=? WHERE task_id=?",(status,js(plan if status=="PLAN_READY" else []),rev,now(),tid))
             self._audit(c,t["project_id"],tid,"CHECKPOINT_RESTORED","PASS",{"checkpoint_id":checkpoint_id,"actor":actor,"from_revision":t["revision"],"restored_revision":rev,"restored_status":status,"approval_reset":True,"in_flight_side_effect_replayed":False})
         return self.get_task(tid)
+
+
+    def start_agent_action(self, *, session_id, trace_id, actor_id, action_name, task_id=None, inputs=None):
+        """Append a durable STARTED event before an MCP tool action is executed."""
+        for key, value in (("session_id", session_id), ("trace_id", trace_id),
+                           ("actor_id", actor_id), ("action_name", action_name)):
+            if not isinstance(value, str) or not value.strip():
+                raise ControlPlaneError(f"AGENT_ACTION_{key.upper()}_REQUIRED")
+        action_id = str(uuid.uuid4())
+        project_id = None
+        with self._tx() as c:
+            if task_id:
+                row = c.execute("SELECT project_id FROM tasks WHERE task_id=?", (task_id,)).fetchone()
+                if row:
+                    project_id = row["project_id"]
+            c.execute(
+                "INSERT INTO agent_action_events(action_id,session_id,trace_id,project_id,task_id,actor_id,action_name,occurred_at,phase,status,payload_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (action_id, session_id, trace_id, project_id, task_id, actor_id, action_name,
+                 now(), "STARTED", "IN_PROGRESS", js(redact(inputs or {}))))
+        return {"action_id": action_id, "session_id": session_id, "trace_id": trace_id,
+                "task_id": task_id, "action_name": action_name, "status": "IN_PROGRESS"}
+
+    def finish_agent_action(self, action_id, *, status, outputs=None, error_type=None, error_message=None):
+        """Append a terminal event; never rewrite the STARTED record."""
+        allowed = {"SUCCEEDED", "FAILED", "BLOCKED", "UNKNOWN_OUTCOME"}
+        if status not in allowed:
+            raise ControlPlaneError("AGENT_ACTION_STATUS_INVALID")
+        with self._tx() as c:
+            started = c.execute(
+                "SELECT * FROM agent_action_events WHERE action_id=? AND phase='STARTED' ORDER BY event_id LIMIT 1",
+                (action_id,)).fetchone()
+            if not started:
+                raise ControlPlaneError("AGENT_ACTION_NOT_FOUND")
+            if c.execute("SELECT COUNT(*) FROM agent_action_events WHERE action_id=? AND phase='FINISHED'",
+                          (action_id,)).fetchone()[0]:
+                raise ControlPlaneError("AGENT_ACTION_ALREADY_FINISHED")
+            payload = {"outputs": redact(outputs or {}), "error_type": error_type,
+                       "error_message": redact(error_message) if error_message else None}
+            c.execute(
+                "INSERT INTO agent_action_events(action_id,session_id,trace_id,project_id,task_id,actor_id,action_name,occurred_at,phase,status,payload_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (action_id, started["session_id"], started["trace_id"], started["project_id"],
+                 started["task_id"], started["actor_id"], started["action_name"], now(),
+                 "FINISHED", status, js(payload)))
+        return {"action_id": action_id, "status": status}
+
+    def get_agent_actions(self, *, task_id=None, session_id=None, limit=100):
+        if not isinstance(limit, int) or limit < 1 or limit > 500:
+            raise ControlPlaneError("AGENT_ACTION_LIMIT_OUT_OF_RANGE")
+        if not task_id and not session_id:
+            raise ControlPlaneError("TASK_OR_SESSION_REQUIRED")
+        clauses, params = [], []
+        if task_id:
+            clauses.append("task_id=?")
+            params.append(task_id)
+        if session_id:
+            clauses.append("session_id=?")
+            params.append(session_id)
+        params.append(limit)
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT * FROM agent_action_events WHERE " + " AND ".join(clauses) +
+                " ORDER BY event_id DESC LIMIT ?", params).fetchall()
+            return [{**dict(row), "payload": json.loads(row["payload_json"])}
+                    for row in reversed(rows)]
+
+    def get_resume_context(self, task_id):
+        """Return evidence-backed state and recent recorded actions; do not infer missing history."""
+        task = self.get_task(task_id)
+        actions = self.get_agent_actions(task_id=task_id, limit=100)
+        audit = self.get_audit(task_id)
+        with self._conn() as c:
+            cp = c.execute(
+                "SELECT checkpoint_id,revision,created_at FROM checkpoints WHERE task_id=? ORDER BY created_at DESC LIMIT 1",
+                (task_id,)).fetchone()
+        return {"status": "RECOVERED" if actions or audit or cp else "UNKNOWN",
+                "task": task, "latest_checkpoint": dict(cp) if cp else None,
+                "recent_agent_actions": actions, "audit_events": audit,
+                "history_limit": 100,
+                "limitations": ["Only actions routed through the IRIS MCP adapter are captured.",
+                                "This journal does not capture hidden model reasoning or actions outside this adapter."]}
 
     def get_audit(self,tid):
         with self._conn() as c:

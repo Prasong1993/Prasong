@@ -6,7 +6,7 @@ A new, isolated control-plane implementation. ChatGPT/OpenAI remains the preferr
 
 - Deterministic SQLite core: implemented and locally unit-tested in the development workspace.
 - Trusted source verifier: implemented in `runtime/source_verifier.py`. It fetches only allowlisted HTTPS hosts, rejects query parameters and redirects, checks public DNS results for live fetches, enforces a timeout and body-size limit, and records only the content digest/provenance. **VERIFIED means source retrieval and digest integrity only; it does not prove the semantic truth of the claim.**
-- MCP adapter: the official MCP Python SDK 2.3.0 was installed in GitHub Actions; compile and a real stdio protocol test passed on baseline commit `21f73554d9c7c2034a145d1d6d4dc55c7a8fb8a8`. Authenticated remote transport and ChatGPT host behavior remain **NOT RUN**.
+- MCP adapter: GitHub Actions Run #25 passed for code commit `77ff0f0cab00831c71dcb1be908bf90300298a8a` (Python compile, dependency installation/version recording, unit/failure-path tests, and MCP stdio protocol tests). Run: https://github.com/Prasong1993/Prasong/actions/runs/38103781519. Authenticated remote transport, live ChatGPT host behavior, and Android behavior remain **NOT RUN**. GitHub showed step pass states, but console logs required sign-in and were not independently inspected.
 - ChatGPT Apps SDK/account/mobile connection: **NOT RUN**.
 - Public deployment: **BLOCKED** until authenticated transport, least-privilege permissions, and hosting are configured and tested.
 
@@ -18,7 +18,7 @@ Do not require a separate shell, virtual environment, external server, deploymen
 
 ## Test and MCP boundary
 
-The source files include a Python unit-test suite and an MCP adapter, but their presence is not a claim that they were executed in the current ChatGPT session. Historical CI results are historical evidence only and do not validate subsequent commits. Do not expose write-capable MCP tools publicly without a supported authentication flow, TLS, least-privilege permissions, approval policy, and secret management.
+The Python unit-test suite, failure-path tests, compilation, and MCP stdio protocol tests were executed by GitHub Actions Run #25 for code commit `77ff0f0cab00831c71dcb1be908bf90300298a8a`; all displayed steps passed. This validates that code commit only, not later commits, authenticated remote transport, the ChatGPT host, or Android. The current ChatGPT session did not itself execute Python. Do not expose write-capable MCP tools publicly without a supported authentication flow, TLS, least-privilege permissions, approval policy, and secret management.
 
 
 ## AI action journal and resuming work
@@ -52,3 +52,12 @@ The process session ID is not a verified ChatGPT conversation ID, and the caller
 - To switch to `main`, inspect the diff and acceptance status first; do not merge or write to `main` without explicit approval. Switching a Git ref changes the source revision only. It does not switch the running MCP process, install a server into ChatGPT, migrate the SQLite database, or prove a live connection.
 - A runtime may use only one checked-out source revision at a time unless separate, explicitly configured deployments exist. Do not mix files from branches or assume two branches share state.
 - Safe use is currently limited to local/authorized test environments. Public write-capable deployment is blocked until authenticated transport, TLS, authorization, least privilege, secret handling, and recovery/failure-path tests are verified.
+
+
+## Verification snapshot — 2026-10-11
+
+- Latest observed code-test run: GitHub Actions **Run #25**, ID `38103781519`; branch `work/iris-control-renovation-20261011-copy`; code commit `77ff0f0cab00831c71dcb1be908bf90300298a8a`; conclusion **SUCCESS**.
+- The `verify` job displayed passing steps for Python setup, MCP SDK/CLI install, runtime/SDK version recording, Python compilation, unit/failure-path tests, and MCP stdio protocol tests. Total run duration was 19 seconds; the verify job took 15 seconds.
+- The six bounded-journal projection tests are included in the code commit covered by that run. Do not claim live ChatGPT action capture, authenticated HTTP transport, Android E2E, or production readiness from this CI result.
+- The CI job page displayed a Node.js 20 deprecation warning and a notice that `ubuntu-latest` is scheduled to migrate to Ubuntu 26 beginning 2026-10-19. These are maintenance warnings, not test failures.
+- Actual console log output was not inspectable because GitHub displayed “Sign in to view logs”; only the run conclusion and displayed step states were observed.

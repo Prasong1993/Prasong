@@ -36,3 +36,19 @@ The process session ID is not a verified ChatGPT conversation ID, and the caller
 - Unknown external outcomes block the task rather than triggering an unsafe blind retry.
 - Checkpoint recovery restores planning state, resets approval, and never replays an in-flight side effect.
 - Audit payloads redact common secret-shaped values; callers must still avoid sending secrets in inputs.
+
+## Journal payload limits and use conditions
+
+- The MCP adapter writes a `STARTED` record before invoking a tool and a terminal record afterward. If the start record cannot be persisted, the operation is not invoked. If the final record cannot be persisted, treat the result as `UNKNOWN_OUTCOME` and inspect task state/history before retrying.
+- Journal payloads are metadata, not a complete archive of arbitrary tool output: strings are capped at 500 characters, nested structures are depth-limited, dictionaries are capped at 30 keys, list samples are capped at 10 items, and history-reading tools store compact summaries to prevent recursive log growth. The caller still receives the normal tool result.
+- Redaction is defense-in-depth, not a guarantee against every secret or personal-data format. Never send credentials, access tokens, passwords, or unnecessary personal data to tools.
+- `session_id` is currently process-scoped, not a verified ChatGPT conversation ID; caller identity is unauthenticated in the local stdio adapter. Do not use these fields as proof of authenticated identity.
+- The SQLite database is persistent only at the configured `IRIS_DB_PATH` and on storage that survives process restarts. A different path or separate deployment may use a different database. Back up and protect the database; do not assume Git branch changes migrate or switch database contents.
+
+## Branch switching is not database switching
+
+- Active source branch for this work: `work/iris-control-renovation-20261011-copy`. `main` remains read-only for this project until explicit approval.
+- To test or continue work on the secondary branch, select that exact branch/ref in GitHub and read back the latest commit and files before editing.
+- To switch to `main`, inspect the diff and acceptance status first; do not merge or write to `main` without explicit approval. Switching a Git ref changes the source revision only. It does not switch the running MCP process, install a server into ChatGPT, migrate the SQLite database, or prove a live connection.
+- A runtime may use only one checked-out source revision at a time unless separate, explicitly configured deployments exist. Do not mix files from branches or assume two branches share state.
+- Safe use is currently limited to local/authorized test environments. Public write-capable deployment is blocked until authenticated transport, TLS, authorization, least privilege, secret handling, and recovery/failure-path tests are verified.

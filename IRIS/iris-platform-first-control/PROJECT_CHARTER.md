@@ -67,3 +67,10 @@ A GitHub branch and repository contents are accessible via the connected GitHub 
 - If a warning persists or its cause is unclear, mark the write BLOCKED and record the exact warning and recovery attempts; do not claim success.
 - After every successful write, read the exact path back from the target branch and verify the expected content/commit SHA. After related writes, compare branch diffs.
 - This protocol governs data writes only; it does not authorize bypassing security, permission, size, rate-limit, or approval controls.
+
+## Primary work surface — ChatGPT conversation
+- The primary operator workspace is the active ChatGPT conversation and the capabilities/tools available through this ChatGPT session. Keep task interpretation, decisions, progress summaries, recovery instructions, and user-facing operation here.
+- Do not introduce a separate runtime, virtual environment, test server, external workspace, or duplicate test system merely to increase test coverage or claim readiness. Prefer checks and actions that are genuinely available through the active ChatGPT session.
+- GitHub is the versioned project repository when needed; repository storage or CI results are not evidence that the project is connected to or executing inside ChatGPT. Do not make GitHub Actions, a local shell, or a separate deployment the required operating surface for ordinary project work.
+- Be explicit about capability boundaries: a GitHub file read is a repository inspection, a tool invocation is a tool invocation, and neither proves that ChatGPT Apps/MCP is connected to the target account. If a required runtime/protocol cannot be exercised from the active ChatGPT session, record it as UNKNOWN/BLOCKED/NOT RUN rather than creating an unrelated environment or claiming PASS.
+- On each continuation, recover from the project ledger/action history available here first. Record the exact action attempted, tool used, target, result/error, changed artifact/commit when applicable, verification performed, and next safe action. Do not rely on conversational recall alone.

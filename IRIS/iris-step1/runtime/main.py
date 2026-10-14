@@ -1,6 +1,7 @@
 """iris-step1 API: approval-gated tasks with persistent evidence and audit."""
 from __future__ import annotations
 import json
+import sqlite3
 import uuid
 from typing import Any
 from fastapi import FastAPI, HTTPException

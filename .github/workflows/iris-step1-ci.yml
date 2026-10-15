@@ -1,0 +1,37 @@
+name: iris-step1 CI
+
+on:
+  push:
+    branches:
+      - "work/iris-step1-source-20261015"
+  pull_request:
+    paths:
+      - "IRIS/iris-step1/**"
+      - ".github/workflows/iris-step1-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: IRIS/iris-step1
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: IRIS/iris-step1/requirements.txt
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+      - name: Run workflow regression tests
+        run: python -m pytest -q
